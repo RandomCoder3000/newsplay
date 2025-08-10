@@ -1,4 +1,4 @@
-// extras.js — extra topic cards with colored panels + mini‑quizzes (7 topics)
+// extras.js — extra topic cards with colored panels + mini‑quizzes (7 topics) + fallback quizzes for main cards
 // Load order in index.html (at the very bottom):
 //   <script src="app.js" defer></script>
 //   <script src="extras.js" defer></script>
@@ -313,6 +313,74 @@
     return { node: wrap, renderPanels, attachTTS, renderQuiz };
   }
 
+  // 4.5) Fallback quizzes for main cards (Trade, Banks, Taxes, GDP)
+  // (Only adds them if app.js didn’t already insert them.)
+  const QUIZ_MAIN = {
+    trade: [
+      { q:'Countries trade to…', opts:['get things they don\'t make well','make everything themselves'], a:0 },
+      { q:'Specialization means…', opts:['focusing on what you\'re best at','stopping trade'], a:0 },
+      { q:'Imports are…', opts:['things we buy from other countries','things we sell to them'], a:0 }
+    ],
+    banks: [
+      { q:'Banks use part of deposits to…', opts:['make loans','buy candy'], a:0 },
+      { q:'Interest is…', opts:['extra money paid for borrowing','a holiday'], a:0 },
+      { q:'Banks must keep part of deposits as…', opts:['reserves','recycling'], a:0 }
+    ],
+    taxes: [
+      { q:'Taxes pay for…', opts:['public services like roads & schools','video game points'], a:0 },
+      { q:'Tax on things you buy is…', opts:['sales tax / GST','plant tax'], a:0 },
+      { q:'Higher incomes paying higher rates is called…', opts:['progressive','invisible'], a:0 }
+    ],
+    gdp: [
+      { q:'GDP measures…', opts:['value of goods/services made in a country','amount of gold a country has'], a:0 },
+      { q:'GDP per person is…', opts:['GDP divided by population','GDP times population'], a:0 },
+      { q:'GDP does not capture everything, like…', opts:['happiness or environmental costs','any prices at all'], a:0 }
+    ]
+  };
+
+  function mountMainQuiz(key, panelId, badge){
+    if (document.getElementById('quiz-main-'+key)) return; // already present
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const article = panel.closest('article');
+    if (!article) return;
+    const holderId = `quiz-main-${key}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-4 p-3 rounded-xl bg-slate-50';
+    const btnId = `btn-${holderId}`; const outId = `out-${holderId}`;
+    wrap.innerHTML = `
+      <h4 class="font-semibold">Mini Quiz 🧠</h4>
+      <div class="mt-2 space-y-2" id="${holderId}"></div>
+      <button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white" id="${btnId}">Check answers</button>
+      <p class="mt-2 text-sm" id="${outId}"></p>
+    `;
+    article.appendChild(wrap);
+    const questions = QUIZ_MAIN[key] || [];
+    const qHolder = wrap.querySelector('#'+holderId);
+    qHolder.innerHTML = questions.map((qq,i)=>{
+      const name = `q-${key}-${i}`;
+      return `<div><p class=\"text-sm font-medium\">${i+1}) ${qq.q}</p>${qq.opts.map((op,j)=>`<label class=\"text-sm block\"><input type=\"radio\" name=\"${name}\" value=\"${j}\"/> ${op}</label>`).join('')}</div>`;
+    }).join('');
+    const btn = wrap.querySelector('#'+btnId); const out = wrap.querySelector('#'+outId);
+    btn.onclick = ()=>{
+      let score=0; const total=questions.length;
+      questions.forEach((qq,i)=>{ const checked = wrap.querySelector(`input[name=\"q-${key}-${i}\"]:checked`); if(checked && +checked.value===qq.a) score++; });
+      out.textContent = `Score: ${score}/${total}`;
+      if (typeof addBadge === 'function' && score===total && total>0) addBadge(badge,'🧠');
+    };
+  }
+
+  function ensureMainQuizzes(){
+    // If app.js already mounted them, do nothing; else add.
+    const ready = !!document.getElementById('panel2-1');
+    if (!ready) return false;
+    mountMainQuiz('trade','panel2-1','Trade Whiz');
+    mountMainQuiz('banks','panel3-1','Banking Brain');
+    mountMainQuiz('taxes','panel4-1','Tax Pro');
+    mountMainQuiz('gdp','panel5-1','GDP Guru');
+    return true;
+  }
+
   // 5) Mount to the existing grid
   function mount(){
     const grid = document.querySelector('main section.grid');
@@ -343,6 +411,14 @@
       const t = e.detail || getTier();
       registry.forEach(({card})=> card.renderPanels(t));
     });
+
+    // Try to ensure main quizzes exist (fallback if app.js didn’t add them)
+    if (!ensureMainQuizzes()){
+      // Retry a few times in case panels render a bit later
+      let tries = 0; const h = setInterval(()=>{
+        tries++; if (ensureMainQuizzes() || tries>10) clearInterval(h);
+      }, 150);
+    }
   }
 
   // Initialize after DOM is parsed
