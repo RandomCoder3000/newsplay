@@ -139,6 +139,50 @@
           <div class="comic-panel rounded-xl bg-violet-50 p-3" id="panel3-3"></div>
         </div>
       </article>
+
+      <!-- FOURTH STORY CARD -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story4-title">How do taxes work?</h3>
+            <a id="story4-source" class="text-xs text-indigo-600 underline" 
+               href="https://en.wikipedia.org/wiki/Tax" target="_blank" rel="noreferrer">
+              Source link
+            </a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-4" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-amber-50 p-3" id="panel4-1"></div>
+          <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel4-2"></div>
+          <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel4-3"></div>
+        </div>
+      </article>
+
+      <!-- FIFTH STORY CARD -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story5-title">What is GDP?</h3>
+            <a id="story5-source" class="text-xs text-indigo-600 underline" 
+               href="https://en.wikipedia.org/wiki/Gross_domestic_product" target="_blank" rel="noreferrer">
+              Source link
+            </a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-5" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-emerald-50 p-3" id="panel5-1"></div>
+          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel5-2"></div>
+          <div class="comic-panel rounded-xl bg-green-50 p-3" id="panel5-3"></div>
+        </div>
+      </article>
     </section>
 
     <!-- HOW‑TO PUBLISH -->
@@ -268,6 +312,96 @@
       }
     })();
 
+    const story4 = {
+      title: "How do taxes work?",
+      panels: {
+        "6_8": [
+          "🧾 Panel 1: Grown‑ups and shops pay a small part of money called tax.",
+          "🚒 Panel 2: This money helps pay for roads, schools, parks, and helpers like firefighters.",
+          "🤝 Panel 3: Everyone giving a little means the whole town can share big things."
+        ],
+        "9_11": [
+          "🏫 Taxes are money collected by the government to fund public services—schools, hospitals, roads.",
+          "🧮 Some taxes are on income, some on things you buy (sales tax/GST).",
+          "⚖️ Different countries choose different rates and rules to try to be fair."
+        ],
+        "12_14": [
+          "📚 Taxes fund public goods and transfers. Main types: income, corporate, consumption (VAT/GST), property.",
+          "📊 Systems can be progressive, proportional, or regressive; policy balances revenue, equity, and incentives.",
+          "🌐 Compliance and enforcement matter; budgets decide how tax money is allocated."
+        ]
+      },
+      source: "https://en.wikipedia.org/wiki/Tax"
+    };
+
+    function renderStory4() {
+      document.getElementById('story4-title').textContent = story4.title;
+      document.getElementById('story4-source').href = story4.source;
+      const panels = story4.panels[currentTier];
+      document.getElementById('panel4-1').textContent = panels[0];
+      document.getElementById('panel4-2').textContent = panels[1];
+      document.getElementById('panel4-3').textContent = panels[2];
+    }
+
+    (function(){
+      const btn4 = document.getElementById('btn-tts-4');
+      if (btn4) {
+        btn4.addEventListener('click', () => {
+          const text = story4.panels[currentTier].join(' ');
+          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = currentTier === '6_8' ? 0.9 : 1;
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utter);
+        });
+      }
+    })();
+
+    const story5 = {
+      title: "What is GDP?",
+      panels: {
+        "6_8": [
+          "🏭 Panel 1: Imagine adding up all the things a country makes in a year.",
+          "🧮 Panel 2: That big total is called GDP—it shows how busy the country’s economy is.",
+          "📈 Panel 3: If GDP grows, people are making more stuff and services."
+        ],
+        "9_11": [
+          "🧰 GDP is the value of goods and services made in a country in one year.",
+          "🔁 It can grow or shrink; we compare years to see change.",
+          "👥 GDP per person divides GDP by the number of people to compare countries."
+        ],
+        "12_14": [
+          "🧮 GDP measures market value of final goods/services within borders over a period (often real vs nominal).",
+          "📊 It’s tracked by components: consumption, investment, government spending, and net exports (C+I+G+NX).",
+          "⚠️ Limits: doesn’t capture inequality, unpaid work, or environmental costs."
+        ]
+      },
+      source: "https://en.wikipedia.org/wiki/Gross_domestic_product"
+    };
+
+    function renderStory5() {
+      document.getElementById('story5-title').textContent = story5.title;
+      document.getElementById('story5-source').href = story5.source;
+      const panels = story5.panels[currentTier];
+      document.getElementById('panel5-1').textContent = panels[0];
+      document.getElementById('panel5-2').textContent = panels[1];
+      document.getElementById('panel5-3').textContent = panels[2];
+    }
+
+    (function(){
+      const btn5 = document.getElementById('btn-tts-5');
+      if (btn5) {
+        btn5.addEventListener('click', () => {
+          const text = story5.panels[currentTier].join(' ');
+          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = currentTier === '6_8' ? 0.9 : 1;
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utter);
+        });
+      }
+    })();
+
     let currentTier = "6_8";
 
     function renderStory() {
@@ -288,6 +422,8 @@
         renderStory();
     if (typeof renderStory2 === 'function') renderStory2();
     if (typeof renderStory3 === 'function') renderStory3();
+    if (typeof renderStory4 === 'function') renderStory4();
+    if (typeof renderStory5 === 'function') renderStory5();
       });
     });
 
@@ -350,6 +486,8 @@
     renderStory();
     if (typeof renderStory2 === 'function') renderStory2();
     if (typeof renderStory3 === 'function') renderStory3();
+    if (typeof renderStory4 === 'function') renderStory4();
+    if (typeof renderStory5 === 'function') renderStory5();
 
     /******************
      * 2) WORLD BANK DATA CHART (GDP per capita) — no API key needed
