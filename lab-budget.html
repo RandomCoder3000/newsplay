@@ -287,7 +287,7 @@
   document.getElementById('btn-reset').addEventListener('click',()=>{
     sums.needs=sums.wants=sums.save=sums.share=0;
     coins.forEach((c,id)=>{ c.where='bank'; });
-    bankEl.querySelectorAll('.coin').forEach(el=> bankEl.appendChild(el));
+    document.querySelectorAll('.coin').forEach(el=> bankEl.appendChild(el));
     updateAll();
   });
 
