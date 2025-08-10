@@ -1,267 +1,459 @@
-// extras.js — add more topics + colored panels + mini‑quizzes
-// Load order in index.html (at the very bottom):
-//   <script src="app.js" defer></script>
-//   <script src="extras.js" defer></script>
+/* app.js — core logic for NewsPlay (stories 1–5, chart, quiz, glossary, badges)
+   Load with: <script src="app.js" defer></script>
+*/
 
-(function(){
-  // 0) Helpers
-  function getTier(){
-    try {
-      if (typeof window.getCurrentTier === 'function') return window.getCurrentTier();
-      if (typeof getPrefs === 'function') { const t = (getPrefs() || {}).tier; if (t) return t; }
-    } catch {}
-    const activeBtn = document.querySelector('.age-btn.text-white');
-    return activeBtn?.dataset?.tier || '6_8';
-  }
+/******************
+ * 0) PREFS & BADGES HELPERS
+ ******************/
+const PREFS_KEY = 'np_prefs_v1';
+const BADGES_KEY = 'np_badges_v1';
+function getPrefs(){ try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } }
+function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+function savePref(key, value){ const p = getPrefs(); p[key]=value; setPrefs(p); }
+function getBadges(){ try { return JSON.parse(localStorage.getItem(BADGES_KEY)) || []; } catch { return []; } }
+function addBadge(name, emoji){ const list = getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); confetti(); } }
+function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+function confetti(){ const c=document.body; for(let i=0;i<18;i++){ const s=document.createElement('span'); s.textContent=['🎉','⭐','✨'][i%3]; s.style.position='fixed'; s.style.left=(50+Math.random()*6-3)+'%'; s.style.top='40%'; s.style.fontSize=(16+Math.random()*14)+'px'; s.style.pointerEvents='none'; s.style.transition='transform 900ms ease, opacity 900ms ease'; c.appendChild(s); requestAnimationFrame(()=>{ s.style.transform=`translate(${(Math.random()*160-80)}px, ${180+Math.random()*180}px) rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }); setTimeout(()=>s.remove(),1000); } }
 
-  function speak(text){
-    if (!('speechSynthesis' in window)) { alert('Text‑to‑Speech not supported in this browser.'); return; }
-    const tier = getTier();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = tier === '6_8' ? 0.9 : 1;
-    speechSynthesis.cancel(); speechSynthesis.speak(utter);
-  }
-
-  // 1) Extra topics (4)
-  const EXTRA_STORIES = [
-    {
-      id: 'budget',
-      title: 'What is a budget?',
-      source: 'https://en.wikipedia.org/wiki/Government_budget',
-      panels: {
-        '6_8': [
-          '🐖 Panel 1: A budget is a plan for your money—like a piggy‑bank map.',
-          '📝 Panel 2: You list money coming in and money going out.',
-          '🎯 Panel 3: You decide needs first, then nice‑to‑haves.'
-        ],
-        '9_11': [
-          '📒 A budget compares income to spending so you don’t run out.',
-          '⚖️ If spending is more than income, that’s a deficit; if less, a surplus.',
-          '🧭 Budgets help choose priorities (save, give, spend).'
-        ],
-        '12_14': [
-          '📑 Budgets allocate scarce resources; trade‑offs decide programs and savings.',
-          '➖ Deficit = spending − income; Surplus = income − spending.',
-          '🏛️ Governments publish budgets each year to plan taxes and services.'
-        ]
-      }
-    },
-    {
-      id: 'fx',
-      title: 'What is an exchange rate?',
-      source: 'https://en.wikipedia.org/wiki/Exchange_rate',
-      panels: {
-        '6_8': [
-          '💱 Panel 1: Different countries use different money.',
-          '🔁 Panel 2: An exchange rate tells how much one money is worth in another.',
-          '🧳 Panel 3: When you travel, you swap money using that rate.'
-        ],
-        '9_11': [
-          '💵 1 US dollar might equal many rupees; this number changes over time.',
-          '📉 If your money buys less of another money, it weakened (depreciated).',
-          '📈 If it buys more, it strengthened (appreciated).'
-        ],
-        '12_14': [
-          '🌊 Rates can float (markets) or be fixed/managed by policy.',
-          '⚖️ A stronger currency makes imports cheaper, exports harder; the reverse for a weaker one.',
-          '🏦 Central banks and trade flows influence rates over time.'
-        ]
-      }
-    },
-    {
-      id: 'recession',
-      title: 'What is a recession?',
-      source: 'https://en.wikipedia.org/wiki/Recession',
-      panels: {
-        '6_8': [
-          '🐢 Panel 1: A recession is when the economy slows down.',
-          '🏪 Panel 2: Shops sell less and some jobs get harder to find.',
-          '🔧 Panel 3: Leaders try to help the economy speed up again.'
-        ],
-        '9_11': [
-          '📉 A recession is when the economy shrinks for a while.',
-          '👥 People spend less; businesses make less; some hiring pauses.',
-          '🔁 Later, growth usually returns as spending and jobs pick up.'
-        ],
-        '12_14': [
-          '🧮 It’s a broad drop in output, income, jobs, and sales for months.',
-          '🧰 Governments/central banks may use policy tools to support demand.',
-          '📊 We track it with indicators like GDP and unemployment.'
-        ]
-      }
-    },
-    {
-      id: 'unemployment',
-      title: 'What is unemployment?',
-      source: 'https://en.wikipedia.org/wiki/Unemployment',
-      panels: {
-        '6_8': [
-          '👷 Panel 1: Unemployment is when grown‑ups want a job but can’t find one.',
-          '🔎 Panel 2: Communities try to help people find work.',
-          '📈 Panel 3: We count how many people are looking for jobs.'
-        ],
-        '9_11': [
-          '📊 The unemployment rate shows the share of workers who are job‑hunting.',
-          '⏳ Some unemployment is short while people switch jobs (frictional).',
-          '🏭 Others come from skill changes or slowdowns.'
-        ],
-        '12_14': [
-          '🧩 Types: frictional, structural (skills/location mismatch), cyclical (downturns).',
-          '📈 Rate = unemployed ÷ labor force; policies aim to reduce it.',
-          '🏫 Training & mobility can help lower structural unemployment.'
-        ]
-      }
-    }
-  ];
-
-  // 2) Color palettes per topic (so panels aren’t plain white)
-  const PALETTES = {
-    budget: ['bg-pink-50','bg-rose-50','bg-red-50'],
-    fx: ['bg-indigo-50','bg-blue-50','bg-sky-50'],
-    recession: ['bg-yellow-50','bg-amber-50','bg-orange-50'],
-    unemployment: ['bg-lime-50','bg-green-50','bg-emerald-50']
-  };
-  function paletteFor(id){ return PALETTES[id] || ['bg-slate-50','bg-slate-50','bg-slate-50']; }
-
-  // 3) Mini‑quiz database (3 Q per topic)
-  const QUIZ_DB = {
-    budget: [
-      { q:'A budget compares…', opts:['income to spending','sports to movies'], a:0 },
-      { q:'Spending more than income is a…', opts:['surplus','deficit'], a:1 },
-      { q:'First plan for…', opts:['needs','only fun things'], a:0 }
+/******************
+ * 1) AGE‑ADAPTIVE STORY CONTENT
+ ******************/
+const story = {
+  title: "Why do prices change?",
+  panels: {
+    "6_8": [
+      "🍌 Panel 1: Your banana costs 10 coins yesterday.",
+      "🏪 Panel 2: Storms hurt farms. Fewer bananas arrive.",
+      "💡 Panel 3: With less bananas, shops raise prices. This is called price rise."
     ],
-    fx: [
-      { q:'An exchange rate tells…', opts:['how much one money is worth in another','the weather'], a:0 },
-      { q:'If your money buys less foreign money, it…', opts:['depreciated','appreciated'], a:0 },
-      { q:'Who influences exchange rates?', opts:['markets & central banks','librarians'], a:0 }
+    "9_11": [
+      "📈 When many people want an item but fewer are available, the price often goes up.",
+      "🌧️ Bad weather or higher fuel costs can make it harder to bring goods to shops.",
+      "🧠 This price increase across many things is called inflation."
     ],
-    recession: [
-      { q:'In a recession the economy usually…', opts:['shrinks for a while','grows very fast'], a:0 },
-      { q:'People often…', opts:['spend less','buy more luxury items'], a:0 },
-      { q:'One way to track recessions is with…', opts:['GDP & jobs','shoe sizes'], a:0 }
-    ],
-    unemployment: [
-      { q:'Unemployment means…', opts:['people want jobs but can’t find them','nobody wants a job'], a:0 },
-      { q:'Switching between jobs is called…', opts:['frictional unemployment','magical hopping'], a:0 },
-      { q:'Training and mobility help lower…', opts:['structural unemployment','ice cream prices'], a:0 }
+    "12_14": [
+      "🔍 Prices change with supply and demand. Lower supply or higher demand pushes prices up.",
+      "⛽ Transport and energy costs also ripple into final prices you see.",
+      "🧮 When average prices rise broadly over time, that’s inflation (often tracked by CPI)."
     ]
+  },
+  source: "https://en.wikipedia.org/wiki/Inflation"
+};
+
+const story2 = {
+  title: "Why do countries trade?",
+  panels: {
+    "6_8": [
+      "🌾 Panel 1: One country grows lots of rice. Another makes great toys.",
+      "🚢 Panel 2: They swap—rice for toys—so both have what they need.",
+      "🤝 Panel 3: Trading helps people get more choices at good prices."
+    ],
+    "9_11": [
+      "📦 Countries trade when each can make some things easier or cheaper.",
+      "💱 Swapping (import/export) means more variety and sometimes lower prices.",
+      "🧠 This idea is called specialization—do what you’re best at, trade for the rest."
+    ],
+    "12_14": [
+      "⚖️ Trade is driven by comparative advantage—produce where opportunity cost is lowest.",
+      "🌍 Imports/exports increase variety, efficiency, and can lower average prices.",
+      "🧭 Downsides can include job shifts or dependence; policies try to balance these."
+    ]
+  },
+  source: "https://en.wikipedia.org/wiki/International_trade"
+};
+
+const story3 = {
+  title: "How do banks work?",
+  panels: {
+    "6_8": [
+      "🏦 Panel 1: People put money in a bank to keep it safe.",
+      "💸 Panel 2: The bank keeps some money and lends the rest to people and businesses.",
+      "➕ Panel 3: Loans are paid back later with a little extra called interest."
+    ],
+    "9_11": [
+      "📥 Banks hold deposits and use part of them to make loans.",
+      "📈 Borrowers pay interest; savers may earn a smaller interest.",
+      "🛡️ Rules make banks keep a safe reserve so people can withdraw cash."
+    ],
+    "12_14": [
+      "📊 Banks take deposits (liabilities) and make loans (assets); lending can create new deposit money.",
+      "💱 Interest is the price of borrowing; the spread between loan and deposit rates is income.",
+      "🏛️ Central banks influence rates/reserves; risk controls help prevent bank runs."
+    ]
+  },
+  source: "https://en.wikipedia.org/wiki/Bank"
+};
+
+const story4 = {
+  title: "How do taxes work?",
+  panels: {
+    "6_8": [
+      "🧾 Panel 1: Grown‑ups and shops pay a small part of money called tax.",
+      "🚒 Panel 2: This money helps pay for roads, schools, parks, and helpers like firefighters.",
+      "🤝 Panel 3: Everyone giving a little means the whole town can share big things."
+    ],
+    "9_11": [
+      "🏫 Taxes are money collected by the government to fund public services—schools, hospitals, roads.",
+      "🧮 Some taxes are on income, some on things you buy (sales tax/GST).",
+      "⚖️ Different countries choose different rates and rules to try to be fair."
+    ],
+    "12_14": [
+      "📚 Taxes fund public goods and transfers. Main types: income, corporate, consumption (VAT/GST), property.",
+      "📊 Systems can be progressive, proportional, or regressive; policy balances revenue, equity, and incentives.",
+      "🌐 Compliance and enforcement matter; budgets decide how tax money is allocated."
+    ]
+  },
+  source: "https://en.wikipedia.org/wiki/Tax"
+};
+
+const story5 = {
+  title: "What is GDP?",
+  panels: {
+    "6_8": [
+      "🏭 Panel 1: Imagine adding up all the things a country makes in a year.",
+      "🧮 Panel 2: That big total is called GDP—it shows how busy the country’s economy is.",
+      "📈 Panel 3: If GDP grows, people are making more stuff and services."
+    ],
+    "9_11": [
+      "🧰 GDP is the value of goods and services made in a country in one year.",
+      "🔁 It can grow or shrink; we compare years to see change.",
+      "👥 GDP per person divides GDP by the number of people to compare countries."
+    ],
+    "12_14": [
+      "🧮 GDP measures market value of final goods/services within borders over a period (often real vs nominal).",
+      "📊 It’s tracked by components: consumption, investment, government spending, and net exports (C+I+G+NX).",
+      "⚠️ Limits: doesn’t capture inequality, unpaid work, or environmental costs."
+    ]
+  },
+  source: "https://en.wikipedia.org/wiki/Gross_domestic_product"
+};
+
+let currentTier = (function(){ const p=getPrefs(); return p.tier || '6_8'; })();
+
+function renderStory(){
+  document.getElementById('story-title').textContent = story.title;
+  document.getElementById('story-source').href = story.source;
+  const panels = story.panels[currentTier];
+  for (let i=0;i<3;i++) document.getElementById(`panel-${i+1}`).textContent = panels[i];
+}
+function renderStory2(){
+  document.getElementById('story2-title').textContent = story2.title;
+  document.getElementById('story2-source').href = story2.source;
+  const panels = story2.panels[currentTier];
+  document.getElementById('panel2-1').textContent = panels[0];
+  document.getElementById('panel2-2').textContent = panels[1];
+  document.getElementById('panel2-3').textContent = panels[2];
+}
+function renderStory3(){
+  document.getElementById('story3-title').textContent = story3.title;
+  document.getElementById('story3-source').href = story3.source;
+  const panels = story3.panels[currentTier];
+  document.getElementById('panel3-1').textContent = panels[0];
+  document.getElementById('panel3-2').textContent = panels[1];
+  document.getElementById('panel3-3').textContent = panels[2];
+}
+function renderStory4(){
+  document.getElementById('story4-title').textContent = story4.title;
+  document.getElementById('story4-source').href = story4.source;
+  const panels = story4.panels[currentTier];
+  document.getElementById('panel4-1').textContent = panels[0];
+  document.getElementById('panel4-2').textContent = panels[1];
+  document.getElementById('panel4-3').textContent = panels[2];
+}
+function renderStory5(){
+  document.getElementById('story5-title').textContent = story5.title;
+  document.getElementById('story5-source').href = story5.source;
+  const panels = story5.panels[currentTier];
+  document.getElementById('panel5-1').textContent = panels[0];
+  document.getElementById('panel5-2').textContent = panels[1];
+  document.getElementById('panel5-3').textContent = panels[2];
+}
+
+// Age switcher
+
+document.querySelectorAll('.age-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.age-btn').forEach(b => b.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    btn.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+    currentTier = btn.dataset.tier;
+    savePref('tier', currentTier);
+    renderStory(); renderStory2(); renderStory3(); renderStory4(); renderStory5();
+    // If glossary open, re-render for current tier
+    const gm = document.getElementById('glossary-modal');
+    if (gm && gm.classList.contains('show')) document.getElementById('glossary-content').innerHTML = glossaryHTML(currentTier);
+    // Optional event for add-ons
+    document.dispatchEvent(new CustomEvent('tierchange', { detail: currentTier }));
+  });
+});
+
+// Highlight saved tier button on load
+(function(){
+  const target = document.querySelector(`.age-btn[data-tier="${currentTier}"]`);
+  if (target) {
+    document.querySelectorAll('.age-btn').forEach(b => b.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    target.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+  }
+})();
+
+// Expose helper for add-ons
+window.getCurrentTier = () => currentTier;
+
+// Text‑to‑Speech (browser Web Speech API) — first card
+const ttsBtn = document.getElementById('btn-tts');
+if (ttsBtn) {
+  ttsBtn.addEventListener('click', () => {
+    const text = story.panels[currentTier].join(' ');
+    if (!('speechSynthesis' in window)) { alert('Text‑to‑Speech not supported in this browser.'); return; }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = currentTier === '6_8' ? 0.9 : 1;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utter);
+  });
+}
+
+// TTS for other cards
+(function(){
+  const map = [
+    ['btn-tts-2', ()=>story2.panels[currentTier].join(' ')],
+    ['btn-tts-3', ()=>story3.panels[currentTier].join(' ')],
+    ['btn-tts-4', ()=>story4.panels[currentTier].join(' ')],
+    ['btn-tts-5', ()=>story5.panels[currentTier].join(' ')]
+  ];
+  map.forEach(([id, getter])=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', ()=>{
+      if (!('speechSynthesis' in window)) { alert('Text‑to‑Speech not supported here.'); return; }
+      const utter = new SpeechSynthesisUtterance(getter());
+      utter.rate = currentTier === '6_8' ? 0.9 : 1;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    });
+  });
+})();
+
+// Explain‑Back — simple kindness scorer (on‑device; no AI key needed)
+const scoreBtn = document.getElementById('btn-score');
+if (scoreBtn) {
+  scoreBtn.addEventListener('click', () => {
+    const t = document.getElementById('explain-text').value.trim();
+    const out = document.getElementById('score-output');
+    if (t.length < 20) { out.textContent = 'Nice start! Try adding 1) what changed, 2) why it changed, 3) the word inflation.'; return; }
+    let points = 1; if (/price|prices/i.test(t)) points++; if (/supply|demand/i.test(t)) points++; if (/inflation/i.test(t)) points++;
+    const messages = { 1:'Great effort! Try to mention prices and why they changed.', 2:'Good! You noticed prices changed. Can you add supply or demand?', 3:'Strong! You used key ideas. One more detail would make it excellent.', 4:'Excellent explanation! You covered the big ideas 🎉' };
+    out.textContent = messages[Math.min(points,4)];
+    if (points >= 4) addBadge('Inflation Explainer','📈');
+  });
+}
+
+// Optional: voice to text (only in some browsers)
+let recognizing = false; let recognition;
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.lang = 'en-US'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.onstart = () => { document.getElementById('record-status').textContent = 'Mic: recording…'; };
+  recognition.onend = () => { recognizing = false; document.getElementById('record-status').textContent = 'Mic: stopped'; };
+  recognition.onresult = (e) => { const transcript = Array.from(e.results).map(r => r[0].transcript).join(' '); document.getElementById('explain-text').value = transcript; };
+}
+const recordBtn = document.getElementById('btn-record');
+if (recordBtn) {
+  recordBtn.addEventListener('click', ()=>{
+    if (!recognition) { alert('Speech recognition not supported here. You can type instead!'); return; }
+    if (!recognizing) { recognizing = true; recognition.start(); } else { recognition.stop(); }
+  });
+}
+
+// Initial render of all stories
+renderStory(); renderStory2(); renderStory3(); renderStory4(); renderStory5();
+
+/******************
+ * 1.5) MINI‑QUIZZES for MAIN CARDS (stories 2–5)
+ ******************/
+const QUIZ_MAIN = {
+  trade: [
+    { q:'Countries trade to…', opts:['get things they don\'t make well','make everything themselves'], a:0 },
+    { q:'Specialization means…', opts:['focusing on what you\'re best at','stopping trade'], a:0 },
+    { q:'Imports are…', opts:['things we buy from other countries','things we sell to them'], a:0 }
+  ],
+  banks: [
+    { q:'Banks use part of deposits to…', opts:['make loans','buy candy'], a:0 },
+    { q:'Interest is…', opts:['extra money paid for borrowing','a holiday'], a:0 },
+    { q:'Banks must keep part of deposits as…', opts:['reserves','recycling'], a:0 }
+  ],
+  taxes: [
+    { q:'Taxes pay for…', opts:['public services like roads & schools','video game points'], a:0 },
+    { q:'Tax on things you buy is…', opts:['sales tax / GST','plant tax'], a:0 },
+    { q:'Higher incomes paying higher rates is called…', opts:['progressive','invisible'], a:0 }
+  ],
+  gdp: [
+    { q:'GDP measures…', opts:['value of goods/services made in a country','amount of gold a country has'], a:0 },
+    { q:'GDP per person is…', opts:['GDP divided by population','GDP times population'], a:0 },
+    { q:'GDP does not capture everything, like…', opts:['happiness or environmental costs','any prices at all'], a:0 }
+  ]
+};
+
+function mountMainQuiz(key, panelId, badge){
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  const article = panel.closest('article');
+  const holderId = `quiz-main-${key}`;
+  if (article.querySelector('#'+holderId)) return; // already added
+  const questions = QUIZ_MAIN[key] || [];
+  const wrap = document.createElement('div');
+  wrap.className = 'mt-4 p-3 rounded-xl bg-slate-50';
+  const btnId = `btn-${holderId}`; const outId = `out-${holderId}`;
+  wrap.innerHTML = `
+    <h4 class="font-semibold">Mini Quiz 🧠</h4>
+    <div class="mt-2 space-y-2" id="${holderId}"></div>
+    <button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white" id="${btnId}">Check answers</button>
+    <p class="mt-2 text-sm" id="${outId}"></p>
+  `;
+  article.appendChild(wrap);
+  const qHolder = wrap.querySelector('#'+holderId);
+  qHolder.innerHTML = questions.map((qq,i)=>{
+    const name = `q-${key}-${i}`;
+    return `<div><p class=\"text-sm font-medium\">${i+1}) ${qq.q}</p>${qq.opts.map((op,j)=>`<label class=\"text-sm block\"><input type=\"radio\" name=\"${name}\" value=\"${j}\"/> ${op}</label>`).join('')}</div>`;
+  }).join('');
+  const btn = wrap.querySelector('#'+btnId); const out = wrap.querySelector('#'+outId);
+  btn.onclick = ()=>{
+    let score=0; const total=questions.length;
+    questions.forEach((qq,i)=>{ const checked = wrap.querySelector(`input[name=\"q-${key}-${i}\"]:checked`); if(checked && +checked.value===qq.a) score++; });
+    out.textContent = `Score: ${score}/${total}`;
+    if (score===total && total>0) addBadge(badge,'🧠');
   };
+}
 
-  // 4) Card factory
-  function createStoryCard(story){
-    const wrap = document.createElement('article');
-    wrap.className = 'p-5 bg-white rounded-2xl shadow';
+function setupMainQuizzes(){
+  mountMainQuiz('trade','panel2-1','Trade Whiz');
+  mountMainQuiz('banks','panel3-1','Banking Brain');
+  mountMainQuiz('taxes','panel4-1','Tax Pro');
+  mountMainQuiz('gdp','panel5-1','GDP Guru');
+}
 
-    const ttsId = `btn-tts-${story.id}`;
-    const p1 = `panel-${story.id}-1`;
-    const p2 = `panel-${story.id}-2`;
-    const p3 = `panel-${story.id}-3`;
-    const colors = paletteFor(story.id);
+setupMainQuizzes();
 
-    // quiz ids
-    const quizId = `quiz-${story.id}`;
-    const quizOut = `quiz-out-${story.id}`;
+/******************
+ * 2) WORLD BANK DATA CHART — no API key needed
+ ******************/
+const chartCtx = document.getElementById('chart');
+let chart;
 
-    wrap.innerHTML = `
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h3 class="text-xl font-bold" id="title-${story.id}">${story.title}</h3>
-          <a id="src-${story.id}" class="text-xs text-indigo-600 underline" href="${story.source}" target="_blank" rel="noreferrer">Source link</a>
-        </div>
-        <div class="flex gap-2">
-          <button id="${ttsId}" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
-        </div>
-      </div>
-      <div class="mt-4 grid grid-cols-3 gap-3">
-        <div class="comic-panel rounded-xl ${colors[0]} p-3" id="${p1}"></div>
-        <div class="comic-panel rounded-xl ${colors[1]} p-3" id="${p2}"></div>
-        <div class="comic-panel rounded-xl ${colors[2]} p-3" id="${p3}"></div>
-      </div>
-      <div class="mt-4 p-3 rounded-xl bg-slate-50">
-        <h4 class="font-semibold">Mini Quiz 🧠</h4>
-        <div class="mt-2 space-y-2" id="${quizId}"></div>
-        <button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white" id="btn-${quizId}">Check answers</button>
-        <p class="mt-2 text-sm" id="${quizOut}"></p>
-      </div>
-    `;
+async function fetchWB(country3='IND', indicator='NY.GDP.PCAP.CD'){
+  const url = `https://api.worldbank.org/v2/country/${country3}/indicator/${indicator}?format=json&per_page=20000`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const rows = (data[1] || []).filter(r => r.date >= '2000' && r.date <= '2023').reverse();
+  const years = rows.map(r => +r.date);
+  const values = rows.map(r => (r.value == null ? null : (indicator === 'NY.GDP.PCAP.CD' ? Math.round(r.value) : Number(r.value))));
+  return { years, values };
+}
 
-    function renderPanels(tier){
-      const pan = story.panels[tier];
-      document.getElementById(p1).textContent = pan[0];
-      document.getElementById(p2).textContent = pan[1];
-      document.getElementById(p3).textContent = pan[2];
+function renderChart(years, values, label, fmt){
+  if (chart) chart.destroy();
+  chart = new Chart(chartCtx, {
+    type: 'line',
+    data: { labels: years, datasets: [{ label, data: values, tension: 0.25, pointRadius: 2 }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: true }, ticks: {} },
+        y: { grid: { display: true }, ticks: { callback: (v)=> fmt(v) } }
+      }
     }
+  });
+}
 
-    function attachTTS(){
-      const btn = wrap.querySelector('#'+ttsId);
-      if (!btn) return;
-      btn.addEventListener('click', ()=> speak(story.panels[getTier()].join(' ')) );
-    }
-
-    function renderQuiz(){
-      const holder = wrap.querySelector('#'+quizId);
-      const questions = QUIZ_DB[story.id] || [];
-      holder.innerHTML = questions.map((qq, i)=>{
-        const name = `q-${story.id}-${i}`;
-        return `
-          <div>
-            <p class="text-sm font-medium">${i+1}) ${qq.q}</p>
-            ${qq.opts.map((op, j)=>`<label class="text-sm block"><input type="radio" name="${name}" value="${j}"/> ${op}</label>`).join('')}
-          </div>`;
-      }).join('');
-      const btn = wrap.querySelector('#btn-'+quizId);
-      const out = wrap.querySelector('#'+quizOut);
-      btn.onclick = ()=>{
-        const questions = QUIZ_DB[story.id] || [];
-        let score=0; let answered=0;
-        questions.forEach((qq, i)=>{
-          const checked = wrap.querySelector(`input[name="q-${story.id}-${i}"]:checked`);
-          if (checked){ answered++; if (+checked.value === qq.a) score++; }
-        });
-        out.textContent = `Score: ${score}/${questions.length}`;
-        if (typeof addBadge === 'function' && score === questions.length && questions.length>0){ addBadge(story.title+' Whiz','🧠'); }
-      };
-    }
-
-    return { node: wrap, renderPanels, attachTTS, renderQuiz };
+async function loadCountry(c){
+  const indicator = document.getElementById('indicator').value;
+  const label = indicator === 'NY.GDP.PCAP.CD' ? 'GDP per person (US$)' : 'Inflation (annual %)';
+  document.getElementById('indicator-label').textContent = label;
+  const { years, values } = await fetchWB(c, indicator);
+  const fmt = indicator === 'NY.GDP.PCAP.CD' ? (v)=> v==null? '' : '$'+Math.round(v).toLocaleString() : (v)=> v==null? '' : (Number(v).toFixed(1)+'%');
+  renderChart(years, values, label, fmt);
+  const yearInput = document.getElementById('year');
+  const yearLabel = document.getElementById('year-label');
+  const yearValue = document.getElementById('year-value');
+  yearInput.min = years[0];
+  yearInput.max = years[years.length - 1];
+  yearInput.value = years[Math.floor(years.length/2)];
+  function updateFromSlider(){
+    const y = +yearInput.value;
+    yearLabel.textContent = y;
+    const idx = years.indexOf(y);
+    const v = values[idx];
+    yearValue.textContent = v==null ? 'No data' : (indicator === 'NY.GDP.PCAP.CD' ? ('$' + Math.round(v).toLocaleString()) : (Number(v).toFixed(1) + '%'));
   }
+  yearInput.oninput = updateFromSlider;
+  updateFromSlider();
+}
 
-  // 5) Mount to the existing grid
-  function mount(){
-    const grid = document.querySelector('main section.grid');
-    if (!grid) return;
+// Inputs & persistence
+const countrySel = document.getElementById('country');
+if (countrySel) countrySel.addEventListener('change', (e)=>{ savePref('country', e.target.value); loadCountry(e.target.value); });
+const indicatorSel = document.getElementById('indicator');
+if (indicatorSel) indicatorSel.addEventListener('change', (e)=>{ savePref('indicator', e.target.value); loadCountry(document.getElementById('country').value); });
+const btnLoadCountry = document.getElementById('btn-load-country');
+if (btnLoadCountry) btnLoadCountry.addEventListener('click', ()=>{ const code=(document.getElementById('country-code').value||'').trim().toUpperCase(); if(code.length===3){ savePref('country', code); loadCountry(code); }});
 
-    const tier = getTier();
-    const registry = [];
+// Restore prefs and load
+(function(){
+  const p = getPrefs();
+  if (p.indicator && indicatorSel) indicatorSel.value = p.indicator;
+  if (p.country){ const sel=countrySel; if (sel && [...sel.options].some(o=>o.value===p.country)){ sel.value=p.country; loadCountry(p.country); return; } }
+  loadCountry('IND');
+})();
 
-    EXTRA_STORIES.forEach(st => {
-      const card = createStoryCard(st);
-      grid.appendChild(card.node);
-      card.renderPanels(tier);
-      card.attachTTS();
-      card.renderQuiz();
-      registry.push({ st, card });
-    });
+// Badges shelf init
+renderBadges();
 
-    // Re-render when user clicks an age button
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest && e.target.closest('.age-btn');
-      if (!btn) return;
-      const t = btn.dataset.tier || getTier();
-      registry.forEach(({card})=> card.renderPanels(t));
-    });
+// Glossary
+function glossaryHTML(tier){
+  const defs = {
+    inflation: { '6_8':'When many prices go up over time.', '9_11':'Prices rising across many goods and services.', '12_14':'A broad, sustained rise in average prices (often tracked by CPI).' },
+    GDP: { '6_8':'All the things a country makes in a year, added up.', '9_11':'The value of goods and services made in a country in one year.', '12_14':'Market value of final goods/services produced within a country in a period.' },
+    interest: { '6_8':'A little extra money paid back with a loan.', '9_11':'Extra money paid for borrowing, or earned from saving.', '12_14':'The price of borrowing money.' },
+    trade: { '6_8':'Countries swap things so everyone gets what they need.', '9_11':'Buying and selling between countries (imports/exports).', '12_14':'Exchange across borders; driven by comparative advantage.' }
+  };
+  const items = Object.entries(defs).map(([k,v])=>`<div><strong>${k}</strong><div class="text-slate-600 mt-1">${v[tier]}</div></div>`);
+  return items.join('');
+}
+const btnOpenGlossary = document.getElementById('open-glossary');
+if (btnOpenGlossary) btnOpenGlossary.addEventListener('click', ()=>{
+  const m=document.getElementById('glossary-modal'); const box=document.getElementById('glossary-content'); if(!m||!box) return;
+  box.innerHTML = glossaryHTML(currentTier);
+  m.classList.add('show');
+});
+const btnCloseGlossary = document.getElementById('close-glossary');
+if (btnCloseGlossary) btnCloseGlossary.addEventListener('click', ()=>{ document.getElementById('glossary-modal')?.classList.remove('show'); });
 
-    // Also re-render when app.js dispatches a tierchange event
-    document.addEventListener('tierchange', (e)=>{
-      const t = e.detail || getTier();
-      registry.forEach(({card})=> card.renderPanels(t));
-    });
-  }
+// Quiz handler (kept for the first card's built-in quiz)
+const btnQuiz = document.getElementById('btn-quiz');
+if (btnQuiz) btnQuiz.addEventListener('click', ()=>{
+  const q1=document.querySelector('input[name="q1"]:checked')?.value;
+  const q2=document.querySelector('input[name="q2"]:checked')?.value;
+  const q3=document.querySelector('input[name="q3"]:checked')?.value;
+  let score=0; if(q1==='up') score++; if(q2==='inflation') score++; if(q3==='ripple') score++;
+  const out=document.getElementById('quiz-output'); out.textContent = 'Score: '+score+'/3';
+  if(score===3){ addBadge('Price Detective','🕵️'); }
+});
 
-  // Initialize after DOM is parsed
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount);
-  } else {
-    mount();
-  }
+/******************
+ * 3) SELF‑TESTS (dev console)
+ ******************/
+(function runSelfTests(){
+  console.group('%cNewsPlay Self‑Tests','color: purple; font-weight: bold');
+  try {
+    const tiers=['6_8','9_11','12_14'];
+    function checkStory(s){ tiers.forEach(t=>{ if(!s.panels[t]||s.panels[t].length!==3) throw new Error('Story panels must have 3 items for tier '+t); }); }
+    [story,story2,story3,story4,story5].forEach(checkStory);
+    if(!document.getElementById('chart')) throw new Error('Chart canvas missing');
+    // New tests: glossary & prefs
+    const g6 = glossaryHTML('6_8'); if(typeof g6!=="string"||!g6.includes('inflation')) throw new Error('Glossary failed for 6_8');
+    const before = getPrefs().tier; savePref('tier','9_11'); if(getPrefs().tier!=='9_11') throw new Error('Pref write failed'); if(before) savePref('tier', before); else { const p=getPrefs(); delete p.tier; setPrefs(p); }
+    // Ensure main quizzes were mounted
+    ['quiz-main-trade','quiz-main-banks','quiz-main-taxes','quiz-main-gdp'].forEach(id=>{ if(!document.getElementById(id)) throw new Error('Missing main quiz '+id); });
+    console.log('✓ Stories, chart, glossary, prefs, main quizzes OK — light theme only');
+  } catch (e) { console.error('Self‑test failed:', e); }
+  console.groupEnd();
 })();
