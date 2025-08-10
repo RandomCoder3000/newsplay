@@ -3,52 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NewsPlay — Kid-Friendly Current Affairs Starter</title>
-
-  <!-- Tailwind (CDN) for fast styling -->
+  <title>NewsPlay — Kid‑Friendly Current Affairs Starter</title>
+  <!-- Tailwind (CDN) for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for the time-travel data chart -->
+  <!-- Chart.js for the Time‑Travel Data widget -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
-    .pop { transition: transform 120ms ease; }
-    .pop:active { transform: scale(0.98); }
-    .comic-panel { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.06); }
-
-    /* Light theme only */
-    :root {
-      --bg:#f8fafc; --surface:#ffffff; --text:#0f172a; --muted:#475569; --link:#4f46e5;
-      --panel:rgba(2,6,23,0.02); --ring:rgba(2,6,23,0.06);
-    }
-    body { color: var(--text); background: linear-gradient(to bottom, #eef2ff, #ffffff); }
-
-    /* Modal helpers */
-    .modal { display:none; }
-    .modal.show { display:flex; }
+    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
+    .comic-panel{box-shadow:inset 0 0 0 3px rgba(0,0,0,.06)}
+    :root{--bg:#f8fafc;--surface:#fff;--text:#0f172a}
+    body{color:var(--text);background:linear-gradient(to bottom,#eef2ff,#ffffff)}
+    .modal{display:none}.modal.show{display:flex}
   </style>
 </head>
 <body class="min-h-screen text-slate-800">
   <!-- HEADER / NAV -->
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div class="flex items-center gap-3">
-        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
-      </div>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
       <nav class="flex items-center gap-2">
         <a href="quiz.html" class="pop px-3 py-2 rounded-xl bg-indigo-100">🧠 Big Quiz</a>
         <a href="lab-sd.html" class="pop px-3 py-2 rounded-xl bg-emerald-100">⚖️ Supply & Demand Lab</a>
         <a href="lab-budget.html" class="pop px-3 py-2 rounded-xl bg-amber-100">💰 Budget Builder</a>
         <a href="create-comic.html" class="pop px-3 py-2 rounded-xl bg-pink-100">🎨 Comic Studio</a>
         <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-slate-200">📚 Glossary</button>
-        <div class="hidden md:flex items-center gap-2 text-sm">
-          <span class="text-slate-600">Stickers:</span>
-          <div id="badge-shelf" class="flex gap-1"></div>
-        </div>
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Stickers:</span><div id="badge-shelf" class="flex gap-1"></div></div>
       </nav>
     </div>
-    <p class="mt-2 text-slate-600">
-      Kid-friendly explanations of economics & current events. Choose an age, tap a card, learn by mini-comics 🎉
-    </p>
+    <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 pb-24">
@@ -65,29 +47,188 @@
       <p class="mt-2 text-sm text-slate-600">Tip: This instantly changes wording and examples everywhere.</p>
     </section>
 
-    <!-- STORY CARDS / MINI-COMICS -->
+    <!-- STORY CARDS / MINI‑COMICS -->
     <section class="mt-6 grid md:grid-cols-2 gap-6">
-      <!-- 1) PRICES / INFLATION (has built-in quiz) -->
+      <!-- 1) PRICES / INFLATION (built‑in quiz) -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
             <h3 class="text-xl font-bold" id="story-title">Why do prices change?</h3>
-            <a id="story-source" class="text-xs text-indigo-600 underline"
-               href="https://en.wikipedia.org/wiki/Inflation" target="_blank" rel="noreferrer">Source link</a>
+            <a id="story-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Inflation" target="_blank" rel="noreferrer">Source link</a>
           </div>
           <div class="flex gap-2">
             <button id="btn-tts" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
           </div>
         </div>
-
-        <!-- 3-panel mini-comic -->
         <div class="mt-4 grid grid-cols-3 gap-3" id="comic">
           <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel-1"></div>
           <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel-2"></div>
           <div class="comic-panel rounded-xl bg-lime-50 p-3" id="panel-3"></div>
         </div>
-
-        <!-- Explain-Back -->
         <div class="mt-5 p-3 rounded-xl bg-slate-50">
-          <h4 class="font-semibold">Explain-Back 🎤</h4>
-          <p class="text-sm text-slate-600">In 15 seconds, try to explain the
+          <h4 class="font-semibold">Explain‑Back 🎤</h4>
+          <p class="text-sm text-slate-600">In 15 seconds, try to explain the story in your own words! (Use the mic or type.)</p>
+          <div class="mt-2 flex flex-wrap gap-2 items-center">
+            <button id="btn-record" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">🎙️ Start/Stop</button>
+            <span id="record-status" class="text-xs text-slate-500">Mic: idle</span>
+          </div>
+          <textarea id="explain-text" class="mt-2 w-full h-24 p-2 rounded-lg border" placeholder="Or type your explanation here..."></textarea>
+          <button id="btn-score" class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">✨ Get kind feedback</button>
+          <p id="score-output" class="mt-2 text-sm"></p>
+        </div>
+        <div class="mt-5 p-3 rounded-2xl bg-slate-50" id="quiz">
+          <h4 class="font-semibold">Quick Quiz 🧠</h4>
+          <p class="text-sm text-slate-600">Choose the best answers.</p>
+          <div class="mt-2 space-y-2">
+            <div>
+              <p class="text-sm font-medium">1) When fewer bananas arrive but many people want them, prices usually…</p>
+              <label class="text-sm block"><input type="radio" name="q1" value="up"> go up</label>
+              <label class="text-sm block"><input type="radio" name="q1" value="down"> go down</label>
+            </div>
+            <div>
+              <p class="text-sm font-medium">2) The word for many prices rising over time is…</p>
+              <label class="text-sm block"><input type="radio" name="q2" value="inflation"> inflation</label>
+              <label class="text-sm block"><input type="radio" name="q2" value="vacation"> vacation</label>
+            </div>
+            <div>
+              <p class="text-sm font-medium">3) A cost that affects many prices (like fuel) is called a…</p>
+              <label class="text-sm block"><input type="radio" name="q3" value="ripple"> ripple</label>
+              <label class="text-sm block"><input type="radio" name="q3" value="sprinkle"> sprinkle</label>
+            </div>
+            <button id="btn-quiz" class="mt-2 pop px-3 py-2 rounded-xl bg-emerald-600 text-white">Check answers</button>
+            <p id="quiz-output" class="mt-2 text-sm"></p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2) TIME‑TRAVEL DATA -->
+      <aside class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <h3 class="text-xl font-bold">Time‑Travel Data ⏳</h3>
+          <div class="flex gap-2 items-center">
+            <label for="country" class="text-sm">Country</label>
+            <select id="country" class="border rounded-lg p-2">
+              <option value="IND" selected>India</option>
+              <option value="USA">United States</option>
+              <option value="GBR">United Kingdom</option>
+              <option value="IDN">Indonesia</option>
+              <option value="BRA">Brazil</option>
+            </select>
+          </div>
+          <div class="flex gap-2 items-center">
+            <label for="indicator" class="text-sm">Indicator</label>
+            <select id="indicator" class="border rounded-lg p-2">
+              <option value="NY.GDP.PCAP.CD" selected>GDP per person</option>
+              <option value="FP.CPI.TOTL.ZG">Inflation (CPI %)</option>
+            </select>
+          </div>
+          <div class="flex gap-2 items-center mt-2">
+            <input id="country-code" class="border rounded-lg p-2" placeholder="Or type ISO code (e.g., IND)" maxlength="3" />
+            <button id="btn-load-country" class="pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Load</button>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600">Indicator: <span id="indicator-label">GDP per person (current US$)</span></p>
+        <canvas id="chart" class="mt-3"></canvas>
+        <div class="mt-4">
+          <label for="year" class="text-sm">Slide through years: <span id="year-label"></span></label>
+          <input id="year" type="range" min="2000" max="2023" value="2016" class="w-full">
+          <div class="text-sm mt-1">Value: <span id="year-value">—</span></div>
+        </div>
+      </aside>
+
+      <!-- 3) TRADE -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story2-title">Why do countries trade?</h3>
+            <a id="story2-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/International_trade" target="_blank" rel="noreferrer">Source link</a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-2" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-sky-50 p-3" id="panel2-1"></div>
+          <div class="comic-panel rounded-xl bg-cyan-50 p-3" id="panel2-2"></div>
+          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel2-3"></div>
+        </div>
+      </article>
+
+      <!-- 4) BANKS -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story3-title">How do banks work?</h3>
+            <a id="story3-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Bank" target="_blank" rel="noreferrer">Source link</a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-3" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-fuchsia-50 p-3" id="panel3-1"></div>
+          <div class="comic-panel rounded-xl bg-purple-50 p-3" id="panel3-2"></div>
+          <div class="comic-panel rounded-xl bg-violet-50 p-3" id="panel3-3"></div>
+        </div>
+      </article>
+
+      <!-- 5) TAXES -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story4-title">How do taxes work?</h3>
+            <a id="story4-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Tax" target="_blank" rel="noreferrer">Source link</a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-4" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-amber-50 p-3" id="panel4-1"></div>
+          <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel4-2"></div>
+          <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel4-3"></div>
+        </div>
+      </article>
+
+      <!-- 6) GDP -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story5-title">What is GDP?</h3>
+            <a id="story5-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Gross_domestic_product" target="_blank" rel="noreferrer">Source link</a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-5" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-emerald-50 p-3" id="panel5-1"></div>
+          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel5-2"></div>
+          <div class="comic-panel rounded-xl bg-green-50 p-3" id="panel5-3"></div>
+        </div>
+      </article>
+      <!-- Note: extra topic cards + fallback quizzes are injected by extras.js below -->
+    </section>
+
+    <!-- GLOSSARY MODAL -->
+    <div id="glossary-modal" class="modal fixed inset-0 items-center justify-center bg-black/40 z-50">
+      <div class="bg-white rounded-2xl p-4 max-w-md w-11/12 shadow">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold">Glossary 📚</h3>
+          <button id="close-glossary" class="text-sm px-2 py-1 rounded bg-slate-200">Close</button>
+        </div>
+        <div id="glossary-content" class="mt-3 space-y-3 text-sm"></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-10 text-center text-xs text-slate-500">
+      <p>Built for kids. No ads, no trackers. You own your data on this page.</p>
+    </footer>
+  </main>
+
+  <!-- Scripts (absolute paths for GitHub Pages) -->
+  <script src="/newsplay/app.js?v=2" defer></script>
+  <script src="/newsplay/extras.js?v=2" defer></script>
+</body>
+</html>
