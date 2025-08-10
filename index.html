@@ -13,13 +13,34 @@
     .pop { transition: transform 120ms ease; }
     .pop:active { transform: scale(0.98); }
     .comic-panel { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.06); }
+
+    /* Light theme only (dark mode removed) */
+    :root {
+      --bg:#f8fafc;           /* page background */
+      --surface:#ffffff;      /* cards */
+      --text:#0f172a;         /* main text */
+      --muted:#475569;        /* secondary text */
+      --link:#4f46e5;         /* link */
+      --panel:rgba(2,6,23,0.02);
+      --ring:rgba(2,6,23,0.06);
+    }
+
+    body { color: var(--text); background: linear-gradient(to bottom, #eef2ff, #ffffff); }
+
+    /* Modal helpers */
+    .modal { display:none; }
+    .modal.show { display:flex; }
   </style>
 </head>
-<body class="bg-gradient-to-b from-indigo-50 to-white min-h-screen text-slate-800">
+<body class="min-h-screen text-slate-800">
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between">
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
-      
+      <div class="flex items-center gap-2">
+        <!-- Dark mode removed -->
+        <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-indigo-100">📚 Glossary</button>
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Stickers:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+      </div>
     </div>
     <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
   </header>
@@ -70,11 +91,36 @@
           <button id="btn-score" class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">✨ Get kind feedback</button>
           <p id="score-output" class="mt-2 text-sm"></p>
         </div>
+
+        <!-- Quick Quiz -->
+        <div class="mt-5 p-3 rounded-2xl bg-slate-50" id="quiz">
+          <h4 class="font-semibold">Quick Quiz 🧠</h4>
+          <p class="text-sm text-slate-600">Choose the best answers.</p>
+          <div class="mt-2 space-y-2">
+            <div>
+              <p class="text-sm font-medium">1) When fewer bananas arrive but many people want them, prices usually…</p>
+              <label class="text-sm block"><input type="radio" name="q1" value="up"> go up</label>
+              <label class="text-sm block"><input type="radio" name="q1" value="down"> go down</label>
+            </div>
+            <div>
+              <p class="text-sm font-medium">2) The word for many prices rising over time is…</p>
+              <label class="text-sm block"><input type="radio" name="q2" value="inflation"> inflation</label>
+              <label class="text-sm block"><input type="radio" name="q2" value="vacation"> vacation</label>
+            </div>
+            <div>
+              <p class="text-sm font-medium">3) A cost that affects many prices (like fuel) is called a…</p>
+              <label class="text-sm block"><input type="radio" name="q3" value="ripple"> ripple</label>
+              <label class="text-sm block"><input type="radio" name="q3" value="sprinkle"> sprinkle</label>
+            </div>
+            <button id="btn-quiz" class="mt-2 pop px-3 py-2 rounded-xl bg-emerald-600 text-white">Check answers</button>
+            <p id="quiz-output" class="mt-2 text-sm"></p>
+          </div>
+        </div>
       </article>
 
-      <!-- TIME‑TRAVEL DATA (World Bank GDP per person) -->
+      <!-- TIME‑TRAVEL DATA (World Bank GDP per person / Inflation) -->
       <aside class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="text-xl font-bold">Time‑Travel Data ⏳</h3>
           <div class="flex gap-2 items-center">
             <label for="country" class="text-sm">Country</label>
@@ -86,8 +132,19 @@
               <option value="BRA">Brazil</option>
             </select>
           </div>
+          <div class="flex gap-2 items-center">
+            <label for="indicator" class="text-sm">Indicator</label>
+            <select id="indicator" class="border rounded-lg p-2">
+              <option value="NY.GDP.PCAP.CD" selected>GDP per person</option>
+              <option value="FP.CPI.TOTL.ZG">Inflation (CPI %)</option>
+            </select>
+          </div>
+          <div class="flex gap-2 items-center mt-2">
+            <input id="country-code" class="border rounded-lg p-2" placeholder="Or type ISO code (e.g., IND)" maxlength="3" />
+            <button id="btn-load-country" class="pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Load</button>
+          </div>
         </div>
-        <p class="text-sm text-slate-600">Indicator: GDP per person (current US$)</p>
+        <p class="text-sm text-slate-600">Indicator: <span id="indicator-label">GDP per person (current US$)</span></p>
         <canvas id="chart" class="mt-3"></canvas>
         <div class="mt-4">
           <label for="year" class="text-sm">Slide through years: <span id="year-label"></span></label>
@@ -185,8 +242,16 @@
       </article>
     </section>
 
-    <!-- HOW‑TO PUBLISH -->
-    
+    <!-- GLOSSARY MODAL -->
+    <div id="glossary-modal" class="modal fixed inset-0 items-center justify-center bg-black/40 z-50">
+      <div class="bg-white rounded-2xl p-4 max-w-md w-11/12 shadow">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold">Glossary 📚</h3>
+          <button id="close-glossary" class="text-sm px-2 py-1 rounded bg-slate-200">Close</button>
+        </div>
+        <div id="glossary-content" class="mt-3 space-y-3 text-sm"></div>
+      </div>
+    </div>
 
     <!-- FOOTER -->
     <footer class="mt-10 text-center text-xs text-slate-500">
@@ -194,355 +259,9 @@
     </footer>
   </main>
 
-  <script>
-    /******************
-     * 1) AGE‑ADAPTIVE STORY CONTENT
-     ******************/
-    const story = {
-      title: "Why do prices change?",
-      panels: {
-        "6_8": [
-          "🍌 Panel 1: Your banana costs 10 coins yesterday.",
-          "🏪 Panel 2: Storms hurt farms. Fewer bananas arrive.",
-          "💡 Panel 3: With less bananas, shops raise prices. This is called price rise."
-        ],
-        "9_11": [
-          "📈 When many people want an item but fewer are available, the price often goes up.",
-          "🌧️ Bad weather or higher fuel costs can make it harder to bring goods to shops.",
-          "🧠 This price increase across many things is called inflation."
-        ],
-        "12_14": [
-          "🔍 Prices change with supply and demand. Lower supply or higher demand pushes prices up.",
-          "⛽ Transport and energy costs also ripple into final prices you see.",
-          "🧮 When average prices rise broadly over time, that’s inflation (often tracked by CPI)."
-        ]
-      },
-      source: "https://en.wikipedia.org/wiki/Inflation"
-    };
-
-    const story2 = {
-      title: "Why do countries trade?",
-      panels: {
-        "6_8": [
-          "🌾 Panel 1: One country grows lots of rice. Another makes great toys.",
-          "🚢 Panel 2: They swap—rice for toys—so both have what they need.",
-          "🤝 Panel 3: Trading helps people get more choices at good prices."
-        ],
-        "9_11": [
-          "📦 Countries trade when each can make some things easier or cheaper.",
-          "💱 Swapping (import/export) means more variety and sometimes lower prices.",
-          "🧠 This idea is called specialization—do what you’re best at, trade for the rest."
-        ],
-        "12_14": [
-          "⚖️ Trade is driven by comparative advantage—produce where opportunity cost is lowest.",
-          "🌍 Imports/exports increase variety, efficiency, and can lower average prices.",
-          "🧭 Downsides can include job shifts or dependence; policies try to balance these."
-        ]
-      },
-      source: "https://en.wikipedia.org/wiki/International_trade"
-    };
-
-    function renderStory2() {
-      document.getElementById('story2-title').textContent = story2.title;
-      document.getElementById('story2-source').href = story2.source;
-      const panels = story2.panels[currentTier];
-      document.getElementById('panel2-1').textContent = panels[0];
-      document.getElementById('panel2-2').textContent = panels[1];
-      document.getElementById('panel2-3').textContent = panels[2];
-    }
-
-    // Second card Text-to-Speech
-    (function(){
-      const btn2 = document.getElementById('btn-tts-2');
-      if (btn2) {
-        btn2.addEventListener('click', () => {
-          const text = story2.panels[currentTier].join(' ');
-          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = currentTier === '6_8' ? 0.9 : 1;
-          speechSynthesis.cancel();
-          speechSynthesis.speak(utter);
-        });
-      }
-    })();
-
-    const story3 = {
-      title: "How do banks work?",
-      panels: {
-        "6_8": [
-          "🏦 Panel 1: People put money in a bank to keep it safe.",
-          "💸 Panel 2: The bank keeps some money and lends the rest to people and businesses.",
-          "➕ Panel 3: Loans are paid back later with a little extra called interest."
-        ],
-        "9_11": [
-          "📥 Banks hold deposits and use part of them to make loans.",
-          "📈 Borrowers pay interest; savers may earn a smaller interest.",
-          "🛡️ Rules make banks keep a safe reserve so people can withdraw cash."
-        ],
-        "12_14": [
-          "📊 Banks take deposits (liabilities) and make loans (assets); lending can create new deposit money.",
-          "💱 Interest is the price of borrowing; the spread between loan and deposit rates is income.",
-          "🏛️ Central banks influence rates/reserves; risk controls help prevent bank runs."
-        ]
-      },
-      source: "https://en.wikipedia.org/wiki/Bank"
-    };
-
-    function renderStory3() {
-      document.getElementById('story3-title').textContent = story3.title;
-      document.getElementById('story3-source').href = story3.source;
-      const panels = story3.panels[currentTier];
-      document.getElementById('panel3-1').textContent = panels[0];
-      document.getElementById('panel3-2').textContent = panels[1];
-      document.getElementById('panel3-3').textContent = panels[2];
-    }
-
-    // Third card Text-to-Speech
-    (function(){
-      const btn3 = document.getElementById('btn-tts-3');
-      if (btn3) {
-        btn3.addEventListener('click', () => {
-          const text = story3.panels[currentTier].join(' ');
-          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = currentTier === '6_8' ? 0.9 : 1;
-          speechSynthesis.cancel();
-          speechSynthesis.speak(utter);
-        });
-      }
-    })();
-
-    const story4 = {
-      title: "How do taxes work?",
-      panels: {
-        "6_8": [
-          "🧾 Panel 1: Grown‑ups and shops pay a small part of money called tax.",
-          "🚒 Panel 2: This money helps pay for roads, schools, parks, and helpers like firefighters.",
-          "🤝 Panel 3: Everyone giving a little means the whole town can share big things."
-        ],
-        "9_11": [
-          "🏫 Taxes are money collected by the government to fund public services—schools, hospitals, roads.",
-          "🧮 Some taxes are on income, some on things you buy (sales tax/GST).",
-          "⚖️ Different countries choose different rates and rules to try to be fair."
-        ],
-        "12_14": [
-          "📚 Taxes fund public goods and transfers. Main types: income, corporate, consumption (VAT/GST), property.",
-          "📊 Systems can be progressive, proportional, or regressive; policy balances revenue, equity, and incentives.",
-          "🌐 Compliance and enforcement matter; budgets decide how tax money is allocated."
-        ]
-      },
-      source: "https://en.wikipedia.org/wiki/Tax"
-    };
-
-    function renderStory4() {
-      document.getElementById('story4-title').textContent = story4.title;
-      document.getElementById('story4-source').href = story4.source;
-      const panels = story4.panels[currentTier];
-      document.getElementById('panel4-1').textContent = panels[0];
-      document.getElementById('panel4-2').textContent = panels[1];
-      document.getElementById('panel4-3').textContent = panels[2];
-    }
-
-    (function(){
-      const btn4 = document.getElementById('btn-tts-4');
-      if (btn4) {
-        btn4.addEventListener('click', () => {
-          const text = story4.panels[currentTier].join(' ');
-          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = currentTier === '6_8' ? 0.9 : 1;
-          speechSynthesis.cancel();
-          speechSynthesis.speak(utter);
-        });
-      }
-    })();
-
-    const story5 = {
-      title: "What is GDP?",
-      panels: {
-        "6_8": [
-          "🏭 Panel 1: Imagine adding up all the things a country makes in a year.",
-          "🧮 Panel 2: That big total is called GDP—it shows how busy the country’s economy is.",
-          "📈 Panel 3: If GDP grows, people are making more stuff and services."
-        ],
-        "9_11": [
-          "🧰 GDP is the value of goods and services made in a country in one year.",
-          "🔁 It can grow or shrink; we compare years to see change.",
-          "👥 GDP per person divides GDP by the number of people to compare countries."
-        ],
-        "12_14": [
-          "🧮 GDP measures market value of final goods/services within borders over a period (often real vs nominal).",
-          "📊 It’s tracked by components: consumption, investment, government spending, and net exports (C+I+G+NX).",
-          "⚠️ Limits: doesn’t capture inequality, unpaid work, or environmental costs."
-        ]
-      },
-      source: "https://en.wikipedia.org/wiki/Gross_domestic_product"
-    };
-
-    function renderStory5() {
-      document.getElementById('story5-title').textContent = story5.title;
-      document.getElementById('story5-source').href = story5.source;
-      const panels = story5.panels[currentTier];
-      document.getElementById('panel5-1').textContent = panels[0];
-      document.getElementById('panel5-2').textContent = panels[1];
-      document.getElementById('panel5-3').textContent = panels[2];
-    }
-
-    (function(){
-      const btn5 = document.getElementById('btn-tts-5');
-      if (btn5) {
-        btn5.addEventListener('click', () => {
-          const text = story5.panels[currentTier].join(' ');
-          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = currentTier === '6_8' ? 0.9 : 1;
-          speechSynthesis.cancel();
-          speechSynthesis.speak(utter);
-        });
-      }
-    })();
-
-    let currentTier = "6_8";
-
-    function renderStory() {
-      document.getElementById('story-title').textContent = story.title;
-      document.getElementById('story-source').href = story.source;
-      const panels = story.panels[currentTier];
-      for (let i = 0; i < 3; i++) {
-        document.getElementById(`panel-${i+1}`).textContent = panels[i];
-      }
-    }
-
-    // Age switcher
-    document.querySelectorAll('.age-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.age-btn').forEach(b => b.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
-        btn.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
-        currentTier = btn.dataset.tier;
-        renderStory();
-    if (typeof renderStory2 === 'function') renderStory2();
-    if (typeof renderStory3 === 'function') renderStory3();
-    if (typeof renderStory4 === 'function') renderStory4();
-    if (typeof renderStory5 === 'function') renderStory5();
-      });
-    });
-
-    // Text‑to‑Speech (browser Web Speech API)
-    document.getElementById('btn-tts').addEventListener('click', () => {
-      const text = story.panels[currentTier].join(' ');
-      if (!('speechSynthesis' in window)) {
-        alert('Text‑to‑Speech not supported in this browser.');
-        return;
-      }
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = currentTier === '6_8' ? 0.9 : 1;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utter);
-    });
-
-    // Explain‑Back — simple kindness scorer (on‑device; no AI key needed)
-    document.getElementById('btn-score').addEventListener('click', () => {
-      const t = document.getElementById('explain-text').value.trim();
-      const out = document.getElementById('score-output');
-      if (t.length < 20) {
-        out.textContent = 'Nice start! Try adding 1) what changed, 2) why it changed, 3) the word inflation.';
-        return;
-      }
-      let points = 1;
-      if (/price|prices/i.test(t)) points++;
-      if (/supply|demand/i.test(t)) points++;
-      if (/inflation/i.test(t)) points++;
-      const messages = {
-        1: 'Great effort! Try to mention prices and why they changed.',
-        2: 'Good! You noticed prices changed. Can you add supply or demand?',
-        3: 'Strong! You used key ideas. One more detail would make it excellent.',
-        4: 'Excellent explanation! You covered the big ideas 🎉'
-      };
-      out.textContent = messages[Math.min(points,4)];
-    });
-
-    // Optional: voice to text (only in some browsers)
-    let recognizing = false;
-    let recognition;
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => { document.getElementById('record-status').textContent = 'Mic: recording…'; };
-      recognition.onend = () => { recognizing = false; document.getElementById('record-status').textContent = 'Mic: stopped'; };
-      recognition.onresult = (e) => {
-        const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ');
-        document.getElementById('explain-text').value = transcript;
-      };
-    }
-
-    document.getElementById('btn-record').addEventListener('click', async () => {
-      if (!recognition) { alert('Speech recognition not supported here. You can type instead!'); return; }
-      if (!recognizing) { recognizing = true; recognition.start(); } else { recognition.stop(); }
-    });
-
-    renderStory();
-    if (typeof renderStory2 === 'function') renderStory2();
-    if (typeof renderStory3 === 'function') renderStory3();
-    if (typeof renderStory4 === 'function') renderStory4();
-    if (typeof renderStory5 === 'function') renderStory5();
-
-    /******************
-     * 2) WORLD BANK DATA CHART (GDP per capita) — no API key needed
-     ******************/
-    const chartCtx = document.getElementById('chart');
-    let chart;
-
-    async function fetchGDPpc(country3 = 'IND') {
-      // World Bank API: indicator NY.GDP.PCAP.CD, format=json, per page=20000 to get all years
-      const url = `https://api.worldbank.org/v2/country/${country3}/indicator/NY.GDP.PCAP.CD?format=json&per_page=20000`;
-      const res = await fetch(url);
-      const data = await res.json();
-      // data[1] has an array sorted newest→oldest; we’ll collect 2000–2023
-      const rows = (data[1] || []).filter(r => r.date >= '2000' && r.date <= '2023').reverse();
-      const years = rows.map(r => +r.date);
-      const values = rows.map(r => (r.value == null ? null : Math.round(r.value)));
-      return { years, values };
-    }
-
-    function renderChart(years, values) {
-      if (chart) chart.destroy();
-      chart = new Chart(chartCtx, {
-        type: 'line',
-        data: { labels: years, datasets: [{ label: 'GDP per person (US$)', data: values, tension: 0.25, pointRadius: 2 }] },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v)=>'$'+v.toLocaleString() } } }
-        }
-      });
-    }
-
-    async function loadCountry(c) {
-      const { years, values } = await fetchGDPpc(c);
-      renderChart(years, values);
-      const yearInput = document.getElementById('year');
-      const yearLabel = document.getElementById('year-label');
-      const yearValue = document.getElementById('year-value');
-      yearInput.min = years[0];
-      yearInput.max = years[years.length - 1];
-      yearInput.value = years[Math.floor(years.length/2)];
-
-      function updateFromSlider() {
-        const y = +yearInput.value;
-        yearLabel.textContent = y;
-        const idx = years.indexOf(y);
-        const v = values[idx];
-        yearValue.textContent = (v ? '$' + v.toLocaleString() : 'No data');
-      }
-      yearInput.oninput = updateFromSlider;
-      updateFromSlider();
-    }
-
-    document.getElementById('country').addEventListener('change', (e)=> loadCountry(e.target.value));
-    loadCountry('IND');
-  </script>
+  <!-- External scripts keep index.html tiny -->
+  <script src="app.js" defer></script>
+  <script src="extras.js" defer></script>
+  <script src="extras.js" defer></script>
 </body>
 </html>
