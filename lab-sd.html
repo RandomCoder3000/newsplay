@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewsPlay — Supply & Demand Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-indigo-50 to-white text-slate-800">
+  <header class="max-w-5xl mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <a href="./" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">⚖️ NewsPlay <span class="text-indigo-600">Supply & Demand Lab</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+        </div>
+      </div>
+    </div>
+    <p id="hero-sub" class="mt-2 text-slate-600"></p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24">
+    <!-- Controls -->
+    <section class="mt-6 grid md:grid-cols-3 gap-4">
+      <article class="p-4 bg-white rounded-2xl shadow md:col-span-2">
+        <h2 class="font-bold">Set the scene</h2>
+        <div class="mt-3 grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm">Demand level: <span id="lbl-demand"></span></label>
+            <input id="inp-demand" type="range" min="60" max="200" value="120" class="w-full"/>
+          </div>
+          <div>
+            <label class="text-sm">Supply level: <span id="lbl-supply"></span></label>
+            <input id="inp-supply" type="range" min="40" max="200" value="100" class="w-full"/>
+          </div>
+          <div>
+            <label class="text-sm">Elasticity preset</label>
+            <select id="sel-elastic" class="w-full border rounded-lg p-2">
+              <option value="soft">Soft (kids)</option>
+              <option value="normal" selected>Normal</option>
+              <option value="steep">Steep (advanced)</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btn-reset" class="pop px-3 py-2 rounded-xl bg-slate-200">Reset</button>
+            <button id="btn-explain" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white">🔊 Read explanation</button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <h3 class="font-semibold">Shocks (one-click events)</h3>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button data-shock="holiday" class="shock pop px-3 py-2 rounded-xl bg-amber-100">🎉 Holiday craze (Demand ↑)</button>
+            <button data-shock="rain" class="shock pop px-3 py-2 rounded-xl bg-sky-100">🌧️ Rainstorm (Supply ↓)</button>
+            <button data-shock="fuel" class="shock pop px-3 py-2 rounded-xl bg-rose-100">⛽ Fuel price ↑ (Supply ↓)</button>
+            <button data-shock="tech" class="shock pop px-3 py-2 rounded-xl bg-emerald-100">🛠️ Tech improves (Supply ↑)</button>
+            <button data-shock="sale" class="shock pop px-3 py-2 rounded-xl bg-indigo-100">🏷️ Big sale (Demand ↑)</button>
+            <button id="btn-clear-shocks" class="pop px-3 py-2 rounded-xl bg-slate-100">Clear shocks</button>
+          </div>
+        </div>
+      </article>
+      <aside class="p-4 bg-white rounded-2xl shadow">
+        <h2 class="font-bold">Equilibrium now</h2>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <div class="p-3 rounded-xl bg-indigo-50">
+            <div class="text-slate-600">Price</div>
+            <div id="out-price" class="text-2xl font-extrabold">—</div>
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50">
+            <div class="text-slate-600">Quantity</div>
+            <div id="out-qty" class="text-2xl font-extrabold">—</div>
+          </div>
+          <div class="p-3 rounded-xl bg-amber-50 col-span-2">
+            <div class="text-slate-600">Summary</div>
+            <div id="out-summary" class="text-sm"></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Chart -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="font-bold">Price over time</h2>
+        <div class="text-xs text-slate-500">Each change adds a point.</div>
+      </div>
+      <canvas id="chart" class="mt-3"></canvas>
+    </section>
+
+    <!-- Guide -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="font-bold">How this lab works</h2>
+      <p id="guide" class="mt-2 text-sm text-slate-700"></p>
+    </section>
+  </main>
+
+  <script>
+  /************ 0) Shared storage & badges ************/
+  const PREFS_KEY='np_prefs_v1';
+  const BADGES_KEY='np_badges_v1';
+  function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{};}catch{return{}} }
+  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+  function savePref(k,v){ const p=getPrefs(); p[k]=v; setPrefs(p); }
+  function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
+  function addBadge(name,emoji){ const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); burst(); } }
+  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+  function burst(){ const c=document.body; for(let i=0;i<12;i++){ const s=document.createElement('span'); s.textContent=['🎉','⭐','✨'][i%3]; s.style.position='fixed'; s.style.left=(50+Math.random()*6-3)+'%'; s.style.top='40%'; s.style.fontSize=(16+Math.random()*14)+'px'; s.style.pointerEvents='none'; s.style.transition='transform 900ms ease, opacity 900ms ease'; c.appendChild(s); requestAnimationFrame(()=>{ s.style.transform=`translate(${(Math.random()*160-80)}px, ${180+Math.random()*180}px) rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }); setTimeout(()=>s.remove(),1000); } }
+
+  /************ 1) Age tiering ************/
+  let currentTier=(function(){ const p=getPrefs(); return p.tier||'6_8'; })();
+  const heroCopy={
+    '6_8':'Move the sliders. If more people want things (demand ↑), price can go up. If fewer things are for sale (supply ↓), price can go up too.',
+    '9_11':'Prices are where supply meets demand. Try shock buttons to shift the curves and watch price and quantity change.',
+    '12_14':'Linear model: Qd=a-bP, Qs=c+dP. Shocks shift a or c. Pick elasticity presets to change b and d. Solve at Qd=Qs.'
+  };
+  const guideCopy={
+    '6_8':'Think of demand as how many kids want ice cream. Supply is how many cones the truck has. If a storm hits (supply ↓) or a party starts (demand ↑), the price can change.',
+    '9_11':'Demand slider raises the intercept a (buyers). Supply slider raises c (sellers). Shocks add temporary pushes. Price is (a-c)/(b+d).',
+    '12_14':'We use a simple static equilibrium. Intercepts: a=demand base, c=supply base. Slopes b,d come from elasticity preset. We clamp negative solutions to zero for clarity.'
+  };
+  function paintTier(){
+    document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    const active=document.querySelector(`.age-btn[data-tier="${currentTier}"]`);
+    if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+    document.getElementById('hero-sub').textContent=heroCopy[currentTier];
+    document.getElementById('guide').textContent=guideCopy[currentTier];
+  }
+  document.querySelectorAll('.age-btn').forEach(btn=> btn.addEventListener('click',()=>{ currentTier=btn.dataset.tier; savePref('tier',currentTier); paintTier(); narrate(); }));
+
+  /************ 2) Model ************/
+  const demandEl=document.getElementById('inp-demand');
+  const supplyEl=document.getElementById('inp-supply');
+  const lblDemand=document.getElementById('lbl-demand');
+  const lblSupply=document.getElementById('lbl-supply');
+  const elasticEl=document.getElementById('sel-elastic');
+  const outPrice=document.getElementById('out-price');
+  const outQty=document.getElementById('out-qty');
+  const outSummary=document.getElementById('out-summary');
+  const btnReset=document.getElementById('btn-reset');
+  const btnExplain=document.getElementById('btn-explain');
+
+  const shocks={ holiday:+25, rain:-30, fuel:-15, tech:+20, sale:+15 };
+  let demandShift=0, supplyShift=0;
+  const usedShocks=new Set();
+
+  const slopes={ soft:{b:0.3,d:0.3}, normal:{b:0.6,d:0.5}, steep:{b:1.0,d:0.8} };
+
+  const ctx=document.getElementById('chart');
+  let chart; const series=[]; let tick=0;
+
+  function compute(){
+    const a = Number(demandEl.value) + demandShift; // demand intercept
+    const c = Number(supplyEl.value) + supplyShift; // supply intercept
+    const {b,d} = slopes[elasticEl.value]||slopes.normal;
+    const denom=b+d; const numer=a-c;
+    let P = denom<=0 ? 0 : numer/denom; if (!isFinite(P)) P=0; if (P<0) P=0;
+    let Q = c + d*P; if (!isFinite(Q)) Q=0; if (Q<0) Q=0;
+    return {a,c,b,d,P,Q};
+  }
+
+  function fmt(n){ return Math.round(n*10)/10; }
+
+  function update(reason){
+    lblDemand.textContent = Number(demandEl.value);
+    lblSupply.textContent = Number(supplyEl.value);
+    const {a,c,b,d,P,Q} = compute();
+    outPrice.textContent = fmt(P);
+    outQty.textContent = fmt(Q);
+    outSummary.textContent = summaryText(reason, {a,c,b,d,P,Q});
+    series.push({x: ++tick, y: fmt(P)});
+    renderChart();
+    if (series.length===1) addBadge('Equilibrium Explorer','⚖️');
+  }
+
+  function summaryText(reason, s){
+    const why = reason ? ` (${reason})` : '';
+    if (currentTier==='6_8') return `Price is about ${fmt(s.P)} and items sold about ${fmt(s.Q)}. More demand pushes price up; more supply pushes it down${why}.`;
+    if (currentTier==='9_11') return `Price settles where buyers and sellers agree. Now P≈${fmt(s.P)}, Q≈${fmt(s.Q)}${why}. Demand shifts a; supply shifts c.`;
+    return `Qd=a-bP, Qs=c+dP. Using a=${fmt(s.a)}, c=${fmt(s.c)}, b=${s.b}, d=${s.d} ⇒ P*=${fmt(s.P)}, Q*=${fmt(s.Q)}${why}.`;
+  }
+
+  function renderChart(){
+    const labels = series.map(p=>p.x);
+    const data = series.map(p=>p.y);
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Price', data, tension:0.25, pointRadius:2 }] }, options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:true}}, y:{grid:{display:true}} } } });
+  }
+
+  function narrate(){
+    if (!('speechSynthesis' in window)) return;
+    const {P,Q}=compute();
+    let text='';
+    if (currentTier==='6_8') text = `Now the price is about ${fmt(P)} and the amount sold is ${fmt(Q)}.`;
+    else if (currentTier==='9_11') text = `Price meets where supply and demand cross. Price ${fmt(P)}, quantity ${fmt(Q)}.`;
+    else text = `At equilibrium, price ${fmt(P)} and quantity ${fmt(Q)} from Qd equals Qs.`;
+    const u = new SpeechSynthesisUtterance(text); u.rate=currentTier==='6_8'?0.9:1; speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
+
+  /************ 3) Wire up ************/
+  document.querySelectorAll('.shock').forEach(btn=> btn.addEventListener('click',()=>{
+    const k=btn.dataset.shock;
+    if (k==='holiday'||k==='sale') demandShift += shocks[k];
+    else if (k==='tech') supplyShift += shocks[k];
+    else supplyShift += shocks[k];
+    usedShocks.add(k);
+    if (usedShocks.size>=3) addBadge('Shock Master','💥');
+    update(btn.textContent.trim());
+    narrate();
+  }));
+
+  document.getElementById('btn-clear-shocks').addEventListener('click',()=>{ demandShift=0; supplyShift=0; update('cleared shocks'); });
+
+  demandEl.addEventListener('input', ()=> update('demand slider'));
+  supplyEl.addEventListener('input', ()=> update('supply slider'));
+  elasticEl.addEventListener('change', ()=> update('elasticity preset'));
+  btnReset.addEventListener('click', ()=>{ demandEl.value=120; supplyEl.value=100; demandShift=0; supplyShift=0; elasticEl.value='normal'; series.length=0; tick=0; update('reset'); });
+  btnExplain.addEventListener('click', narrate);
+
+  // init
+  paintTier(); renderBadges(); update('init');
+
+  /************ 4) Self-tests (console) ************/
+  (function tests(){
+    console.group('%cLab SD Self-tests','color:purple;font-weight:bold');
+    try{
+      const r=compute(); if (!(r.P>=0 && r.Q>=0)) throw new Error('P or Q invalid');
+      if (!document.getElementById('chart')) throw new Error('chart missing');
+      if (!document.querySelector('.age-btn')) throw new Error('age buttons missing');
+      console.log('✓ UI & math OK');
+    }catch(e){ console.error('Self-test failed', e); }
+    console.groupEnd();
+  })();
+  </script>
+</body>
+</html>
