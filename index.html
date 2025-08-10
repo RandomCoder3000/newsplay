@@ -259,5 +259,85 @@
     });
   })();
   </script>
+<script>
+(function(){
+  // Detect current age tier from the highlighted button
+  function tier(){
+    const btn = document.querySelector('.age-btn.text-white');
+    return (btn && btn.dataset && btn.dataset.tier) || '6_8';
+  }
+
+  // Tiered lines for the FOUR core cards
+  const PACK = {
+    trade: {
+      '6_8': ['We make toys; they grow rice. We swap!', 'Trading helps everyone get what they need.', 'Both sides can be happier after trade.'],
+      '9_11': ['Countries specialize in what they do best.', 'Export what’s easy; import what’s costly.', 'Comparative advantage makes trade win–win.'],
+      '12_14': ['Gains come from lower opportunity cost.', 'Terms of trade affect each side’s gains.', 'Tariffs/standards shape flows & adjustment.']
+    },
+    banks: {
+      '6_8': ['Banks keep money safe.', 'They lend money for big things.', 'Borrowers repay with extra called interest.'],
+      '9_11': ['Banks use deposits to make loans & keep reserves.', 'Borrowers pay interest; savers may earn interest.', 'Rules help banks stay safe.'],
+      '12_14': ['Banks intermediate savers ↔ borrowers.', 'They earn a spread: loan − deposit rate.', 'Capital/liquidity rules control risk.']
+    },
+    taxes: {
+      '6_8': ['We all chip in a little money.', 'It pays for roads, schools, parks.', 'That shared money is taxes.'],
+      '9_11': ['Income tax (earnings), GST/VAT (purchases).', 'Progressive = higher incomes → higher rates.', 'Taxes fund public services we use.'],
+      '12_14': ['Direct vs indirect; incidence = who bears it.', 'Elasticities change price/quantity effects.', 'Externality taxes (e.g., carbon) reduce harm.']
+    },
+    gdp: {
+      '6_8': ['GDP adds up what a country makes this year.', 'Services count too (doctors, teachers).', 'More GDP means more made, not always happier.'],
+      '9_11': ['GDP = value of goods & services made this year.', 'Real GDP removes price changes.', 'Per-person GDP helps compare countries.'],
+      '12_14': ['Expenditure: C + I + G + NX.', 'Real vs nominal; base-year matters.', 'Limits: distribution, unpaid work, environment.']
+    }
+  };
+
+  const IDS = {
+    trade: ['panel2-1','panel2-2','panel2-3'],
+    banks: ['panel3-1','panel3-2','panel3-3'],
+    taxes: ['panel4-1','panel4-2','panel4-3'],
+    gdp:   ['panel5-1','panel5-2','panel5-3']
+  };
+
+  function isBlank(el){ return !el || !el.textContent || !el.textContent.trim(); }
+  function fill(topic, lines){
+    const ids = IDS[topic], els = ids.map(id => document.getElementById(id));
+    if (!els[0]) return;                           // not on this page
+    const blank = els.every(isBlank);
+    // Only fill if blank, or if previously marked as rescued
+    if (!blank && els[0].dataset.rescued !== '1') return;
+    els.forEach((el,i)=>{ if(el){ el.textContent = lines[i]; el.dataset.rescued='1'; } });
+  }
+
+  function paintAll(){
+    const t = tier();
+    fill('trade', PACK.trade[t]);
+    fill('banks', PACK.banks[t]);
+    fill('taxes', PACK.taxes[t]);
+    fill('gdp',   PACK.gdp[t]);
+  }
+
+  // Run once after DOM
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintAll);
+  else paintAll();
+
+  // Repaint rescued panels on tier change
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest && e.target.closest('.age-btn');
+    if (!btn) return;
+    ['trade','banks','taxes','gdp'].forEach(topic=>{
+      const first = document.getElementById(IDS[topic][0]);
+      if (first && first.dataset.rescued === '1') {
+        const lines = PACK[topic][btn.dataset.tier];
+        IDS[topic].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent = lines[i]; });
+      }
+    });
+  });
+
+  // Give the chart a gentle nudge if it didn't render yet
+  window.addEventListener('load', ()=> {
+    setTimeout(()=> document.getElementById('btn-load-country')?.click(), 600);
+  });
+})();
+</script>
 </body>
 </html>
