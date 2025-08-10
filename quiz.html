@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewsPlay — Big Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .pop { transition: transform 120ms ease; }
+    .pop:active { transform: scale(0.98); }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-indigo-50 to-white text-slate-800">
+  <header class="max-w-5xl mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <a href="./" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">🧠 NewsPlay <span class="text-indigo-600">Big Quiz</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+        </div>
+      </div>
+    </div>
+    <p class="mt-2 text-slate-600">Choose a quiz pack below. Your age tier changes wording where available and is saved for next time.</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24">
+    <!-- PACK PICKER -->
+    <section id="packs" class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Cards inserted by JS -->
+    </section>
+
+    <!-- QUIZ RENDER AREA -->
+    <section id="quiz-area" class="mt-6 hidden">
+      <div class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="quiz-title" class="text-xl font-bold">Quiz</h2>
+            <p id="quiz-sub" class="text-sm text-slate-600"></p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-exit" class="pop px-3 py-2 rounded-xl bg-slate-200">⏹️ Exit</button>
+          </div>
+        </div>
+        <div id="quiz-list" class="mt-4 space-y-4"></div>
+        <div class="mt-4 flex items-center gap-3">
+          <button id="btn-submit" class="pop px-4 py-2 rounded-xl bg-indigo-600 text-white">Submit</button>
+          <button id="btn-retry" class="pop px-4 py-2 rounded-xl bg-emerald-600 text-white hidden">Retry</button>
+          <span id="quiz-result" class="text-sm"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  /******************
+   * 0) PREFS & BADGES (shared with index)
+   ******************/
+  const PREFS_KEY = 'np_prefs_v1';
+  const BADGES_KEY = 'np_badges_v1';
+  function getPrefs(){ try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } }
+  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+  function savePref(key, value){ const p = getPrefs(); p[key]=value; setPrefs(p); }
+  function getBadges(){ try { return JSON.parse(localStorage.getItem(BADGES_KEY)) || []; } catch { return []; } }
+  function addBadge(name, emoji){ const list = getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); burst(); } }
+  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+  function burst(){ const c=document.body; for(let i=0;i<12;i++){ const s=document.createElement('span'); s.textContent=['🎉','⭐','✨'][i%3]; s.style.position='fixed'; s.style.left=(50+Math.random()*6-3)+'%'; s.style.top='40%'; s.style.fontSize=(16+Math.random()*14)+'px'; s.style.pointerEvents='none'; s.style.transition='transform 900ms ease, opacity 900ms ease'; c.appendChild(s); requestAnimationFrame(()=>{ s.style.transform=`translate(${(Math.random()*160-80)}px, ${180+Math.random()*180}px) rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }); setTimeout(()=>s.remove(),1000); } }
+
+  /******************
+   * 1) AGE SWITCHER
+   ******************/
+  let currentTier = (function(){ const p=getPrefs(); return p.tier || '6_8'; })();
+  (function initTierButtons(){
+    const buttons = document.querySelectorAll('.age-btn');
+    function paint(){
+      buttons.forEach(b=> b.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+      const active = document.querySelector(`.age-btn[data-tier="${currentTier}"]`);
+      if (active) active.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+    }
+    buttons.forEach(btn => btn.addEventListener('click', ()=>{ currentTier = btn.dataset.tier; savePref('tier', currentTier); paint(); document.dispatchEvent(new CustomEvent('tierchange', { detail: currentTier })); }));
+    paint();
+  })();
+
+  /******************
+   * 2) QUESTION BANK (merged from main + extras)
+   ******************/
+  const BANK = {
+    prices: [
+      { q:'When fewer bananas arrive but many people want them, prices usually…', opts:['go up','go down'], a:0 },
+      { q:'The word for many prices rising over time is…', opts:['inflation','vacation'], a:0 },
+      { q:'A cost that affects many prices (like fuel) is called a…', opts:['ripple','sprinkle'], a:0 }
+    ],
+    trade: [
+      { q:'Countries trade to…', opts:["get things they don't make well","make everything themselves"], a:0 },
+      { q:'Specialization means…', opts:["focusing on what you're best at","stopping trade"], a:0 },
+      { q:'Imports are…', opts:['things we buy from other countries','things we sell to them'], a:0 }
+    ],
+    banks: [
+      { q:'Banks use part of deposits to…', opts:['make loans','buy candy'], a:0 },
+      { q:'Interest is…', opts:['extra money paid for borrowing','a holiday'], a:0 },
+      { q:'Banks must keep part of deposits as…', opts:['reserves','recycling'], a:0 }
+    ],
+    taxes: [
+      { q:'Taxes pay for…', opts:['public services like roads & schools','video game points'], a:0 },
+      { q:'Tax on things you buy is…', opts:['sales tax / GST','plant tax'], a:0 },
+      { q:'Higher incomes paying higher rates is called…', opts:['progressive','invisible'], a:0 }
+    ],
+    gdp: [
+      { q:'GDP measures…', opts:['value of goods/services made in a country','amount of gold a country has'], a:0 },
+      { q:'GDP per person is…', opts:['GDP divided by population','GDP times population'], a:0 },
+      { q:'GDP does not capture everything, like…', opts:['happiness or environmental costs','any prices at all'], a:0 }
+    ],
+    budget: [
+      { q:'A budget compares…', opts:['income to spending','sports to movies'], a:0 },
+      { q:'Spending more than income is a…', opts:['surplus','deficit'], a:1 },
+      { q:'First plan for…', opts:['needs','only fun things'], a:0 }
+    ],
+    fx: [
+      { q:'An exchange rate tells…', opts:['how much one money is worth in another','the weather'], a:0 },
+      { q:'If your money buys less foreign money, it…', opts:['depreciated','appreciated'], a:0 },
+      { q:'Who influences exchange rates?', opts:['markets & central banks','librarians'], a:0 }
+    ],
+    recession: [
+      { q:'In a recession the economy usually…', opts:['shrinks for a while','grows very fast'], a:0 },
+      { q:'People often…', opts:['spend less','buy more luxury items'], a:0 },
+      { q:'One way to track recessions is with…', opts:['GDP & jobs','shoe sizes'], a:0 }
+    ],
+    unemployment: [
+      { q:'Unemployment means…', opts:["people want jobs but can't find them",'nobody wants a job'], a:0 },
+      { q:'Switching between jobs is called…', opts:['frictional unemployment','magical hopping'], a:0 },
+      { q:'Training and mobility help lower…', opts:['structural unemployment','ice cream prices'], a:0 }
+    ],
+    supplydemand: [
+      { q:'Higher demand with same supply tends to…', opts:['raise prices','lower prices'], a:0 },
+      { q:'The balance point is called…', opts:['equilibrium','edge point'], a:0 },
+      { q:'A fall in input costs usually…', opts:['shifts supply right','shifts demand left'], a:0 }
+    ],
+    stocksbonds: [
+      { q:'Stocks represent…', opts:['ownership in a company','a promise to pay interest only'], a:0 },
+      { q:'Bonds usually…', opts:['pay interest','have no risk at all'], a:0 },
+      { q:'Mixing stocks and bonds helps with…', opts:['balancing risk and return','making everything risk‑free'], a:0 }
+    ],
+    supplychain: [
+      { q:'A supply chain is…', opts:['the path goods take to you','a type of jewelry'], a:0 },
+      { q:'A bottleneck can…', opts:['slow the whole chain','make everything free'], a:0 },
+      { q:'Resilience can be improved by…', opts:['backup suppliers','ignoring delays'], a:0 }
+    ]
+  };
+
+  const PACKS = [
+    { id:'mix10', name:'🎲 10‑Q Random Mix', desc:'A mixed bag from all topics', make:()=> pickRandomQuestions(10) },
+    { id:'prices', name:'💸 Prices & Inflation', make:()=> BANK.prices },
+    { id:'trade', name:'🌍 Trade', make:()=> BANK.trade },
+    { id:'banks', name:'🏦 Banks', make:()=> BANK.banks },
+    { id:'taxes', name:'🧾 Taxes', make:()=> BANK.taxes },
+    { id:'gdp', name:'📊 GDP', make:()=> BANK.gdp },
+    { id:'budget', name:'📒 Budget', make:()=> BANK.budget },
+    { id:'fx', name:'💱 Exchange Rates', make:()=> BANK.fx },
+    { id:'recession', name:'📉 Recessions', make:()=> BANK.recession },
+    { id:'unemployment', name:'👷 Unemployment', make:()=> BANK.unemployment },
+    { id:'supplydemand', name:'🍎 Supply & Demand', make:()=> BANK.supplydemand },
+    { id:'stocksbonds', name:'📈 Stocks vs Bonds', make:()=> BANK.stocksbonds },
+    { id:'supplychain', name:'🚚 Supply Chain', make:()=> BANK.supplychain }
+  ];
+
+  function pickRandomQuestions(n){
+    const all = Object.values(BANK).flat();
+    const arr = [...all];
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    return arr.slice(0, n);
+  }
+
+  /******************
+   * 3) RENDER PACK CARDS
+   ******************/
+  const packsEl = document.getElementById('packs');
+  PACKS.forEach(p=>{
+    const card = document.createElement('article');
+    card.className = 'p-4 bg-white rounded-2xl shadow flex flex-col';
+    card.innerHTML = `<h3 class="font-bold">${p.name}</h3>${p.desc?`<p class="text-sm text-slate-600">${p.desc}</p>`:''}<button class="mt-3 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Start</button>`;
+    card.querySelector('button').addEventListener('click', ()=> startQuiz(p));
+    packsEl.appendChild(card);
+  });
+
+  /******************
+   * 4) QUIZ ENGINE
+   ******************/
+  let activePack = null; let activeQuestions = [];
+  const area = document.getElementById('quiz-area');
+  const list = document.getElementById('quiz-list');
+  const title = document.getElementById('quiz-title');
+  const sub = document.getElementById('quiz-sub');
+  const btnExit = document.getElementById('btn-exit');
+  const btnSubmit = document.getElementById('btn-submit');
+  const btnRetry = document.getElementById('btn-retry');
+  const result = document.getElementById('quiz-result');
+
+  function startQuiz(pack){
+    activePack = pack;
+    activeQuestions = pack.make();
+    title.textContent = pack.name;
+    sub.textContent = `${activeQuestions.length} questions · Tier ${currentTier.replace('_','–')}`;
+    renderQuestions();
+    packsEl.classList.add('hidden');
+    area.classList.remove('hidden');
+    result.textContent = '';
+    btnRetry.classList.add('hidden');
+  }
+
+  function renderQuestions(){
+    list.innerHTML = activeQuestions.map((q, i)=>{
+      const name = `q-${i}`;
+      const opts = q.opts.map((op,j)=>`<label class="text-sm block"><input type="radio" name="${name}" value="${j}"> ${op}</label>`).join('');
+      return `<div class="p-3 rounded-xl bg-slate-50"><p class="text-sm font-medium">${i+1}) ${q.q}</p>${opts}</div>`;
+    }).join('');
+  }
+
+  btnSubmit.addEventListener('click', ()=>{
+    let score = 0; const total = activeQuestions.length;
+    activeQuestions.forEach((q,i)=>{
+      const checked = list.querySelector(`input[name="q-${i}"]:checked`);
+      if (checked && +checked.value === q.a) score++;
+    });
+    result.textContent = `Score: ${score}/${total}`;
+    if (score === total && total > 0){ addBadge(packToBadge(activePack.id), '🧠'); }
+    btnRetry.classList.remove('hidden');
+  });
+
+  btnRetry.addEventListener('click', ()=>{
+    if (activePack?.id === 'mix10') { activeQuestions = pickRandomQuestions(10); }
+    renderQuestions();
+    result.textContent = '';
+    btnRetry.classList.add('hidden');
+  });
+
+  btnExit.addEventListener('click', ()=>{
+    area.classList.add('hidden');
+    packsEl.classList.remove('hidden');
+  });
+
+  function packToBadge(id){
+    const map = {
+      mix10: 'Quiz Master 10', prices: 'Price Detective', trade: 'Trade Whiz', banks: 'Banking Brain',
+      taxes: 'Tax Pro', gdp: 'GDP Guru', budget: 'Budget Boss', fx: 'FX Friend', recession: 'Cycle Sleuth',
+      unemployment: 'Job Scout', supplydemand: 'Market Matcher', stocksbonds: 'Portfolio Pro', supplychain: 'Logistics Legend'
+    };
+    return map[id] || 'Quiz Ace';
+  }
+
+  // init badges
+  renderBadges();
+  </script>
+</body>
+</html>
