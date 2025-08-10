@@ -3,232 +3,317 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NewsPlay — Kid‑Friendly Current Affairs Starter</title>
-  <!-- Tailwind (CDN) for fast styling; safe to remove and use your own CSS later -->
+  <title>NewsPlay — Budget Builder</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for the time‑travel data chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    .pop { transition: transform 120ms ease; }
-    .pop:active { transform: scale(0.98); }
-    .comic-panel { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.06); }
-
-    /* Light theme only */
-    :root {
-      --bg:#f8fafc; --surface:#ffffff; --text:#0f172a; --muted:#475569; --link:#4f46e5; --panel:rgba(2,6,23,0.02); --ring:rgba(2,6,23,0.06);
-    }
-    body { color: var(--text); background: linear-gradient(to bottom, #eef2ff, #ffffff); }
-
-    /* Modal helpers */
-    .modal { display:none; }
-    .modal.show { display:flex; }
+    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
+    .coin{cursor:grab; user-select:none}
+    .drop-ok{outline:2px dashed #6366f1; outline-offset:4px}
   </style>
 </head>
-<body class="min-h-screen text-slate-800">
+<body class="min-h-screen bg-gradient-to-b from-amber-50 to-white text-slate-800">
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
-        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
+        <a href="./" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">💰 NewsPlay <span class="text-indigo-600">Budget Builder</span></h1>
       </div>
-      <div class="flex items-center gap-2">
-        <a href="quiz.html" class="pop px-3 py-2 rounded-xl bg-indigo-100">🧠 Big Quiz</a>
-        <a href="lab-sd.html" class="pop px-3 py-2 rounded-xl bg-emerald-100">⚖️ Supply & Demand Lab</a>
-        <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-slate-200">📚 Glossary</button>
-        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Stickers:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+        </div>
       </div>
     </div>
-    <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
+    <p id="hero-sub" class="mt-2 text-slate-600"></p>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 pb-24">
-    <!-- AGE SELECTOR -->
-    <section class="mt-6 p-4 bg-white/70 backdrop-blur rounded-2xl shadow">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <h2 class="font-bold">Age switcher</h2>
-        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
-          <button id="age-6-8" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
-          <button id="age-9-11" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
-          <button id="age-12-14" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
-        </div>
-      </div>
-      <p class="mt-2 text-sm text-slate-600">Tip: This instantly changes wording and examples everywhere.</p>
-    </section>
-
-    <!-- STORY CARDS / MINI‑COMICS -->
-    <section class="mt-6 grid md:grid-cols-2 gap-6">
-      <!-- 1) PRICES / INFLATION -->
-      <article class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-start justify-between gap-3">
+    <!-- Controls + Coin bank -->
+    <section class="mt-6 grid md:grid-cols-3 gap-4">
+      <article class="p-4 bg-white rounded-2xl shadow md:col-span-2">
+        <h2 class="font-bold">Set your allowance</h2>
+        <div class="mt-3 grid sm:grid-cols-2 gap-4">
           <div>
-            <h3 class="text-xl font-bold" id="story-title">Why do prices change?</h3>
-            <a id="story-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Inflation" target="_blank" rel="noreferrer">Source link</a>
+            <label class="text-sm">Weekly allowance: <span id="lbl-income"></span></label>
+            <input id="inp-income" type="range" min="40" max="200" step="10" value="100" class="w-full"/>
+            <p class="mt-1 text-xs text-slate-500" id="rule-line"></p>
           </div>
-          <div class="flex gap-2">
-            <button id="btn-tts" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          <div class="flex items-end gap-2">
+            <button id="btn-reset" class="pop px-3 py-2 rounded-xl bg-slate-200">Reset</button>
+            <button id="btn-cert" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white">🎖️ Export certificate</button>
           </div>
         </div>
-        <div class="mt-4 grid grid-cols-3 gap-3" id="comic">
-          <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel-1"></div>
-          <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel-2"></div>
-          <div class="comic-panel rounded-xl bg-lime-50 p-3" id="panel-3"></div>
-        </div>
-        <!-- Explain‑Back -->
-        <div class="mt-5 p-3 rounded-xl bg-slate-50">
-          <h4 class="font-semibold">Explain‑Back 🎤</h4>
-          <p class="text-sm text-slate-600">In 15 seconds, try to explain the story in your own words! (Use the mic or type.)</p>
-          <div class="mt-2 flex flex-wrap gap-2 items-center">
-            <button id="btn-record" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">🎙️ Start/Stop</button>
-            <span id="record-status" class="text-xs text-slate-500">Mic: idle</span>
-          </div>
-          <textarea id="explain-text" class="mt-2 w-full h-24 p-2 rounded-lg border" placeholder="Or type your explanation here..."></textarea>
-          <button id="btn-score" class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">✨ Get kind feedback</button>
-          <p id="score-output" class="mt-2 text-sm"></p>
-        </div>
-        <!-- Quick Quiz (first card only; others are added by JS) -->
-        <div class="mt-5 p-3 rounded-2xl bg-slate-50" id="quiz">
-          <h4 class="font-semibold">Quick Quiz 🧠</h4>
-          <p class="text-sm text-slate-600">Choose the best answers.</p>
-          <div class="mt-2 space-y-2">
-            <div>
-              <p class="text-sm font-medium">1) When fewer bananas arrive but many people want them, prices usually…</p>
-              <label class="text-sm block"><input type="radio" name="q1" value="up"> go up</label>
-              <label class="text-sm block"><input type="radio" name="q1" value="down"> go down</label>
-            </div>
-            <div>
-              <p class="text-sm font-medium">2) The word for many prices rising over time is…</p>
-              <label class="text-sm block"><input type="radio" name="q2" value="inflation"> inflation</label>
-              <label class="text-sm block"><input type="radio" name="q2" value="vacation"> vacation</label>
-            </div>
-            <div>
-              <p class="text-sm font-medium">3) A cost that affects many prices (like fuel) is called a…</p>
-              <label class="text-sm block"><input type="radio" name="q3" value="ripple"> ripple</label>
-              <label class="text-sm block"><input type="radio" name="q3" value="sprinkle"> sprinkle</label>
-            </div>
-            <button id="btn-quiz" class="mt-2 pop px-3 py-2 rounded-xl bg-emerald-600 text-white">Check answers</button>
-            <p id="quiz-output" class="mt-2 text-sm"></p>
-          </div>
+        <div class="mt-4">
+          <h3 class="font-semibold">Your coins</h3>
+          <p class="text-sm text-slate-600">Drag coins (10 each) into the boxes below.</p>
+          <div id="bank" class="mt-2 flex flex-wrap gap-2 p-3 rounded-xl bg-slate-50 min-h-[64px]" aria-label="Coin bank"></div>
         </div>
       </article>
-
-      <!-- 2) TIME‑TRAVEL DATA (World Bank GDP per person / Inflation) -->
-      <aside class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="text-xl font-bold">Time‑Travel Data ⏳</h3>
-          <div class="flex gap-2 items-center">
-            <label for="country" class="text-sm">Country</label>
-            <select id="country" class="border rounded-lg p-2">
-              <option value="IND" selected>India</option>
-              <option value="USA">United States</option>
-              <option value="GBR">United Kingdom</option>
-              <option value="IDN">Indonesia</option>
-              <option value="BRA">Brazil</option>
-            </select>
-          </div>
-          <div class="flex gap-2 items-center">
-            <label for="indicator" class="text-sm">Indicator</label>
-            <select id="indicator" class="border rounded-lg p-2">
-              <option value="NY.GDP.PCAP.CD" selected>GDP per person</option>
-              <option value="FP.CPI.TOTL.ZG">Inflation (CPI %)</option>
-            </select>
-          </div>
-          <div class="flex gap-2 items-center mt-2">
-            <input id="country-code" class="border rounded-lg p-2" placeholder="Or type ISO code (e.g., IND)" maxlength="3" />
-            <button id="btn-load-country" class="pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Load</button>
-          </div>
-        </div>
-        <p class="text-sm text-slate-600">Indicator: <span id="indicator-label">GDP per person (current US$)</span></p>
-        <canvas id="chart" class="mt-3"></canvas>
-        <div class="mt-4">
-          <label for="year" class="text-sm">Slide through years: <span id="year-label"></span></label>
-          <input id="year" type="range" min="2000" max="2023" value="2016" class="w-full">
-          <div class="text-sm mt-1">Value: <span id="year-value">—</span></div>
+      <aside class="p-4 bg-white rounded-2xl shadow">
+        <h2 class="font-bold">Snapshot</h2>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <div class="p-3 rounded-xl bg-indigo-50"><div class="text-slate-600">Allocated</div><div id="out-alloc" class="text-2xl font-extrabold">0</div></div>
+          <div class="p-3 rounded-xl bg-amber-50"><div class="text-slate-600">Left in bank</div><div id="out-left" class="text-2xl font-extrabold">0</div></div>
+          <div class="p-3 rounded-xl bg-emerald-50 col-span-2"><div class="text-slate-600">Hint</div><div id="out-hint" class="text-sm"></div></div>
         </div>
       </aside>
-
-      <!-- 3) TRADE -->
-      <article class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-xl font-bold" id="story2-title">Why do countries trade?</h3>
-            <a id="story2-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/International_trade" target="_blank" rel="noreferrer">Source link</a>
-          </div>
-          <div class="flex gap-2"><button id="btn-tts-2" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button></div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-3">
-          <div class="comic-panel rounded-xl bg-sky-50 p-3" id="panel2-1"></div>
-          <div class="comic-panel rounded-xl bg-cyan-50 p-3" id="panel2-2"></div>
-          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel2-3"></div>
-        </div>
-      </article>
-
-      <!-- 4) BANKS -->
-      <article class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-xl font-bold" id="story3-title">How do banks work?</h3>
-            <a id="story3-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Bank" target="_blank" rel="noreferrer">Source link</a>
-          </div>
-        <div class="flex gap-2"><button id="btn-tts-3" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button></div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-3">
-          <div class="comic-panel rounded-xl bg-fuchsia-50 p-3" id="panel3-1"></div>
-          <div class="comic-panel rounded-xl bg-purple-50 p-3" id="panel3-2"></div>
-          <div class="comic-panel rounded-xl bg-violet-50 p-3" id="panel3-3"></div>
-        </div>
-      </article>
-
-      <!-- 5) TAXES -->
-      <article class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-xl font-bold" id="story4-title">How do taxes work?</h3>
-            <a id="story4-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Tax" target="_blank" rel="noreferrer">Source link</a>
-          </div>
-          <div class="flex gap-2"><button id="btn-tts-4" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button></div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-3">
-          <div class="comic-panel rounded-xl bg-amber-50 p-3" id="panel4-1"></div>
-          <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel4-2"></div>
-          <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel4-3"></div>
-        </div>
-      </article>
-
-      <!-- 6) GDP -->
-      <article class="p-5 bg-white rounded-2xl shadow">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-xl font-bold" id="story5-title">What is GDP?</h3>
-            <a id="story5-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Gross_domestic_product" target="_blank" rel="noreferrer">Source link</a>
-          </div>
-          <div class="flex gap-2"><button id="btn-tts-5" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button></div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-3">
-          <div class="comic-panel rounded-xl bg-emerald-50 p-3" id="panel5-1"></div>
-          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel5-2"></div>
-          <div class="comic-panel rounded-xl bg-green-50 p-3" id="panel5-3"></div>
-        </div>
-      </article>
     </section>
 
-    <!-- GLOSSARY MODAL -->
-    <div id="glossary-modal" class="modal fixed inset-0 items-center justify-center bg-black/40 z-50">
-      <div class="bg-white rounded-2xl p-4 max-w-md w-11/12 shadow">
-        <div class="flex justify-between items-center">
-          <h3 class="text-lg font-bold">Glossary 📚</h3>
-          <button id="close-glossary" class="text-sm px-2 py-1 rounded bg-slate-200">Close</button>
-        </div>
-        <div id="glossary-content" class="mt-3 space-y-3 text-sm"></div>
+    <!-- Buckets -->
+    <section class="mt-6 grid md:grid-cols-4 gap-4">
+      <div id="bucket-needs" data-bucket="needs" class="p-4 bg-white rounded-2xl shadow min-h-[140px]">
+        <div class="flex items-center justify-between"><h3 class="font-bold">Needs</h3><span id="sum-needs" class="text-sm text-slate-500">0</span></div>
+        <p class="text-xs text-slate-500">Things you must pay for (food, bus fare).</p>
+        <div class="bucket-body mt-2 flex flex-wrap gap-2"></div>
       </div>
-    </div>
+      <div id="bucket-wants" data-bucket="wants" class="p-4 bg-white rounded-2xl shadow min-h-[140px]">
+        <div class="flex items-center justify-between"><h3 class="font-bold">Wants</h3><span id="sum-wants" class="text-sm text-slate-500">0</span></div>
+        <p class="text-xs text-slate-500">Fun extras (stickers, snacks, games).</p>
+        <div class="bucket-body mt-2 flex flex-wrap gap-2"></div>
+      </div>
+      <div id="bucket-save" data-bucket="save" class="p-4 bg-white rounded-2xl shadow min-h-[140px]">
+        <div class="flex items-center justify-between"><h3 class="font-bold">Save</h3><span id="sum-save" class="text-sm text-slate-500">0</span></div>
+        <p class="text-xs text-slate-500">Future goals (bike, book set).</p>
+        <div class="bucket-body mt-2 flex flex-wrap gap-2"></div>
+      </div>
+      <div id="bucket-share" data-bucket="share" class="p-4 bg-white rounded-2xl shadow min-h-[140px]">
+        <div class="flex items-center justify-between"><h3 class="font-bold">Share</h3><span id="sum-share" class="text-sm text-slate-500">0</span></div>
+        <p class="text-xs text-slate-500">Gifts / helping others.</p>
+        <div class="bucket-body mt-2 flex flex-wrap gap-2"></div>
+      </div>
+    </section>
 
-    <!-- FOOTER -->
-    <footer class="mt-10 text-center text-xs text-slate-500">
-      <p>Built for kids. No ads, no trackers. You own your data on this page.</p>
-    </footer>
+    <!-- Chart + 50/30/20 gauge -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="font-bold">Where your money goes</h2>
+        <div class="text-xs text-slate-500">Target (guide): 50% Needs, 30% Wants, 20% Save/Share</div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4 mt-3">
+        <div class="md:col-span-2"><canvas id="chart"></canvas></div>
+        <div id="gauge" class="text-sm space-y-2">
+          <div>
+            <div class="flex justify-between"><span>Needs</span><span id="pct-needs">0%</span></div>
+            <div class="w-full h-2 bg-slate-100 rounded"><div id="bar-needs" class="h-2 rounded bg-indigo-400" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between"><span>Wants</span><span id="pct-wants">0%</span></div>
+            <div class="w-full h-2 bg-slate-100 rounded"><div id="bar-wants" class="h-2 rounded bg-amber-400" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between"><span>Save+Share</span><span id="pct-ss">0%</span></div>
+            <div class="w-full h-2 bg-slate-100 rounded"><div id="bar-ss" class="h-2 rounded bg-emerald-400" style="width:0%"></div></div>
+          </div>
+          <p id="advice" class="text-xs text-slate-600"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Certificate area (captured to PNG) -->
+    <section id="cert-area" class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="font-bold">Certificate preview</h2>
+      <div id="cert-card" class="mt-3 p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-emerald-50">
+        <div class="text-xl font-extrabold">🏅 Budget Certificate</div>
+        <div class="text-sm text-slate-600">I planned my allowance using the 50/30/20 guide.</div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-sm">
+          <div class="p-3 rounded bg-white/80"><div class="text-slate-500">Needs</div><div id="cc-needs" class="text-lg font-bold">0</div></div>
+          <div class="p-3 rounded bg-white/80"><div class="text-slate-500">Wants</div><div id="cc-wants" class="text-lg font-bold">0</div></div>
+          <div class="p-3 rounded bg-white/80"><div class="text-slate-500">Save+Share</div><div id="cc-ss" class="text-lg font-bold">0</div></div>
+        </div>
+        <div class="mt-2 text-xs text-slate-500">Date: <span id="cc-date"></span></div>
+      </div>
+    </section>
   </main>
 
-  <!-- External scripts keep index.html tiny -->
-  <script src="app.js" defer></script>
-  <script src="extras.js" defer></script>
+  <script>
+  /************ 0) Shared storage & badges ************/
+  const PREFS_KEY='np_prefs_v1';
+  const BADGES_KEY='np_badges_v1';
+  function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{};}catch{return{}} }
+  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+  function savePref(k,v){ const p=getPrefs(); p[k]=v; setPrefs(p); }
+  function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
+  function addBadge(name,emoji){ const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); burst(); } }
+  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+  function burst(){ const c=document.body; for(let i=0;i<12;i++){ const s=document.createElement('span'); s.textContent=['🎉','⭐','✨'][i%3]; s.style.position='fixed'; s.style.left=(50+Math.random()*6-3)+'%'; s.style.top='40%'; s.style.fontSize=(16+Math.random()*14)+'px'; s.style.pointerEvents='none'; s.style.transition='transform 900ms ease, opacity 900ms ease'; c.appendChild(s); requestAnimationFrame(()=>{ s.style.transform=`translate(${(Math.random()*160-80)}px, ${180+Math.random()*180}px) rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }); setTimeout(()=>s.remove(),1000); } }
+
+  /************ 1) Tier copy ************/
+  let currentTier=(function(){ const p=getPrefs(); return p.tier||'6_8'; })();
+  const heroCopy={
+    '6_8':'Move coins into boxes: Needs (must pay), Wants (fun), Save, and Share. Try to match the 50/30/20 guide!',
+    '9_11':'Drag 10-coin chips into Needs, Wants, Save, Share. Aim for ~50/30/20. The chart updates live.',
+    '12_14':'A simple allocation tool: 10-unit tokens approximate your allowance. Target split ~50% needs, 30% wants, 20% save/share.'
+  };
+  const adviceCopy={
+    '6_8':'Great plans buy what you need first, then save a little for later, and share when you can.',
+    '9_11':'If Needs >55%, see what can move to Wants or Save. If Save+Share <15%, try saving a bit more.',
+    '12_14':'Heuristic target = 50/30/20. Tolerance ±5pp. Balanced plans build resilience and goals.'
+  };
+  function paintTier(){
+    document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    const active=document.querySelector(`.age-btn[data-tier="${currentTier}"]`);
+    if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+    document.getElementById('hero-sub').textContent=heroCopy[currentTier];
+    document.getElementById('advice').textContent=adviceCopy[currentTier];
+  }
+  document.querySelectorAll('.age-btn').forEach(btn=> btn.addEventListener('click',()=>{ currentTier=btn.dataset.tier; savePref('tier',currentTier); paintTier(); }));
+
+  /************ 2) State ************/
+  const incomeEl=document.getElementById('inp-income');
+  const lblIncome=document.getElementById('lbl-income');
+  const bankEl=document.getElementById('bank');
+  const sums={needs:0,wants:0,save:0,share:0};
+  const COIN=10; // each coin worth 10 units
+  let totalIncome=Number(incomeEl.value);
+  const coins=new Map(); // id -> {amount, where}
+
+  const ruleLine=document.getElementById('rule-line');
+  ruleLine.textContent='Guide: 50% Needs, 30% Wants, 20% Save/Share (fun to try, not a strict rule).';
+
+  function makeCoin(id){
+    const d=document.createElement('div');
+    d.className='coin select-none px-3 py-1 rounded-full bg-amber-200 text-amber-900 text-sm shadow';
+    d.draggable=true; d.id=id; d.textContent=COIN;
+    d.setAttribute('role','button'); d.setAttribute('aria-grabbed','false');
+    d.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain', id); d.style.opacity='0.6'; d.setAttribute('aria-grabbed','true'); });
+    d.addEventListener('dragend',()=>{ d.style.opacity='1'; d.setAttribute('aria-grabbed','false'); });
+    d.addEventListener('dblclick',()=> moveCoin(id,'bank'));
+    return d;
+  }
+
+  function renderCoins(){
+    bankEl.innerHTML='';
+    const needed = Math.round(totalIncome/COIN);
+    // Create coins if missing
+    for(let i=0;i<needed;i++){
+      const id='c'+i;
+      if(!coins.has(id)) coins.set(id,{amount:COIN, where:'bank'});
+    }
+    // Remove extra coins if income shrank
+    [...coins.keys()].forEach(id=>{ const idx=+id.slice(1); if(idx>=needed){
+      const c=coins.get(id); // subtract from sums if it lived in bucket
+      if(c.where!=='bank'){ sums[c.where]-=c.amount; }
+      coins.delete(id);
+      const el=document.getElementById(id); if(el) el.remove();
+    }});
+    // Append bank coins
+    coins.forEach((c,id)=>{ if(c.where==='bank'){ bankEl.appendChild(document.getElementById(id) || makeCoin(id)); }});
+    updateAll();
+  }
+
+  function moveCoin(id, dest){
+    const c=coins.get(id); if(!c) return;
+    if(c.where!==dest){
+      if(c.where!=='bank') sums[c.where]-=c.amount;
+      c.where=dest;
+      if(dest!=='bank') sums[dest]+=c.amount;
+    }
+    const el=document.getElementById(id) || makeCoin(id);
+    if(dest==='bank') bankEl.appendChild(el);
+    else document.querySelector(`#bucket-${dest} .bucket-body`).appendChild(el);
+    updateAll();
+  }
+
+  function setupDrops(){
+    document.querySelectorAll('[data-bucket]').forEach(box=>{
+      box.addEventListener('dragover',e=>{ e.preventDefault(); box.classList.add('drop-ok'); });
+      box.addEventListener('dragleave',()=> box.classList.remove('drop-ok'));
+      box.addEventListener('drop',e=>{ e.preventDefault(); box.classList.remove('drop-ok'); const id=e.dataTransfer.getData('text/plain'); moveCoin(id, box.dataset.bucket); });
+    });
+    bankEl.addEventListener('dragover',e=>{ e.preventDefault(); bankEl.classList.add('drop-ok'); });
+    bankEl.addEventListener('dragleave',()=> bankEl.classList.remove('drop-ok'));
+    bankEl.addEventListener('drop',e=>{ e.preventDefault(); bankEl.classList.remove('drop-ok'); const id=e.dataTransfer.getData('text/plain'); moveCoin(id,'bank'); });
+  }
+
+  /************ 3) Outputs (chart, bars, text) ************/
+  const outAlloc=document.getElementById('out-alloc');
+  const outLeft=document.getElementById('out-left');
+  const outHint=document.getElementById('out-hint');
+  const ctx=document.getElementById('chart');
+  let chart;
+
+  function pct(v){ return totalIncome>0? Math.round((v/totalIncome)*100) : 0; }
+  function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+  function updateAll(){
+    lblIncome.textContent = totalIncome;
+    const allocated=sums.needs+sums.wants+sums.save+sums.share;
+    outAlloc.textContent=allocated;
+    outLeft.textContent=clamp(totalIncome-allocated,0,9999);
+    // update per-bucket numbers
+    document.getElementById('sum-needs').textContent=sums.needs;
+    document.getElementById('sum-wants').textContent=sums.wants;
+    document.getElementById('sum-save').textContent=sums.save;
+    document.getElementById('sum-share').textContent=sums.share;
+    // gauge
+    const pN=pct(sums.needs), pW=pct(sums.wants), pSS=pct(sums.save+sums.share);
+    document.getElementById('pct-needs').textContent=pN+'%';
+    document.getElementById('pct-wants').textContent=pW+'%';
+    document.getElementById('pct-ss').textContent=pSS+'%';
+    document.getElementById('bar-needs').style.width=pN+'%';
+    document.getElementById('bar-wants').style.width=pW+'%';
+    document.getElementById('bar-ss').style.width=pSS+'%';
+    // advice
+    outHint.textContent = adviceCopy[currentTier];
+    // certificate
+    document.getElementById('cc-needs').textContent=sums.needs;
+    document.getElementById('cc-wants').textContent=sums.wants;
+    document.getElementById('cc-ss').textContent=sums.save+sums.share;
+    document.getElementById('cc-date').textContent=new Date().toLocaleDateString();
+    // chart
+    renderChart(pN,pW,pSS);
+    // badge check
+    maybeBadge(allocated);
+  }
+
+  function renderChart(pN,pW,pSS){
+    const data=[pN,pW,pSS];
+    if(chart) chart.destroy();
+    chart=new Chart(ctx,{ type:'doughnut', data:{ labels:['Needs','Wants','Save+Share'], datasets:[{ data, borderWidth:0 }] }, options:{ plugins:{legend:{display:false}}, cutout:'55%', responsive:true } });
+  }
+
+  function maybeBadge(allocated){
+    if(allocated!==totalIncome || totalIncome===0) return; // only when fully allocated
+    const pN=pct(sums.needs), pW=pct(sums.wants), pSS=pct(sums.save+sums.share);
+    const ok = (pN>=45&&pN<=55) && (pW>=25&&pW<=35) && (pSS>=15&&pSS<=25);
+    if(ok) addBadge('Budget Boss','🏅');
+  }
+
+  /************ 4) Buttons ************/
+  document.getElementById('btn-reset').addEventListener('click',()=>{
+    sums.needs=sums.wants=sums.save=sums.share=0;
+    coins.forEach((c,id)=>{ c.where='bank'; });
+    bankEl.querySelectorAll('.coin').forEach(el=> bankEl.appendChild(el));
+    updateAll();
+  });
+
+  document.getElementById('btn-cert').addEventListener('click',async()=>{
+    const node=document.getElementById('cert-card');
+    const canvas=await html2canvas(node,{scale:2});
+    const url=canvas.toDataURL('image/png');
+    const a=document.createElement('a'); a.href=url; a.download='budget-certificate.png'; a.click();
+  });
+
+  incomeEl.addEventListener('input',()=>{ totalIncome=Number(incomeEl.value); renderCoins(); });
+
+  /************ 5) Init ************/
+  paintTier(); renderBadges(); renderCoins(); setupDrops(); updateAll();
+
+  /************ 6) Self-tests (console) ************/
+  (function tests(){
+    console.group('%cBudget Builder Self-tests','color:teal;font-weight:bold');
+    try{
+      if(!document.getElementById('bank')) throw new Error('bank missing');
+      if(!document.querySelector('[data-bucket="needs"]')) throw new Error('bucket missing');
+      const before=sums.needs; moveCoin('c0','needs'); if(sums.needs!==before+COIN) throw new Error('coin move failed'); moveCoin('c0','bank');
+      console.log('✓ Drag/drop and math OK');
+    }catch(e){ console.error('Self-test failed',e); }
+    console.groupEnd();
+  })();
+  </script>
 </body>
 </html>
