@@ -4,6 +4,8 @@
 // - Glossary modal
 // - Time-Travel Data (World Bank): line chart + year slider
 // - Badges (shared with labs): stored in localStorage
+// - Render core topics (Trade, Banks, Taxes, GDP) on init & tier changes
+// - Kid-friendly emojis in ALL story panels
 
 (function(){
   /* --------------------------- 0) Utilities & prefs --------------------------- */
@@ -27,7 +29,7 @@
     const p=getPrefs();
     if(p.tier) return p.tier;
     const active=document.querySelector('.age-btn.text-white');
-    return active?.dataset?.tier || '6_8';
+    return (active && active.dataset && active.dataset.tier) || '6_8';
   }
   window.getCurrentTier = getCurrentTier;
 
@@ -43,9 +45,21 @@
 
   /* --------------------------- 2) First story: panels -------------------------- */
   const LINES={
-    '6_8':['Bananas are super popular today!','Only a few boxes arrived.','When lots want it but there is little, prices go up.'],
-    '9_11':['High demand for bananas today.','Supply trucks were delayed.','When demand↑ and supply↓, price tends to rise.'],
-    '12_14':['Demand spike meets supply constraint.','Logistics reduce deliveries.','Price rises as the market finds a new equilibrium.']
+    '6_8':[
+      '🍌 Bananas are super popular today!',
+      '🚚 Only a few boxes arrived.',
+      '📈 When lots want it but there is little, prices go up.'
+    ],
+    '9_11':[
+      '📈 High demand for bananas today.',
+      '⛓️ Supply trucks were delayed.',
+      '⚖️ When demand↑ and supply↓, price tends to rise.'
+    ],
+    '12_14':[
+      '📊 Demand spike meets supply constraint.',
+      '🚧 Logistics reduce deliveries.',
+      '⚖️ Price rises as the market finds a new equilibrium.'
+    ]
   };
   function renderPanels(){
     const t=getCurrentTier();
@@ -137,7 +151,7 @@
         // set slider bounds
         const min=data[0]?.y||2000; const max=data.at(-1)?.y||2023;
         year.min=min; year.max=max; year.value=Math.floor((min+max)/2); yearLabel.textContent=year.value;
-        const found=data.find(d=>d.y==year.value); yearVal.textContent=found? (ind==='NY.GDP.PCAP.CD' ? Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(found.v) : found.v.toFixed(1)+'%') : '—';
+        const found=data.find(d=>d.y==year.value); yearVal.textContent=found? (ind==='NY.GDP.PCAP.CD' ? Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(found.v) : Number(found.v).toFixed(1)+'%') : '—';
       }catch(e){ console.error('World Bank fetch failed', e); }
     }
 
@@ -145,13 +159,131 @@
     countrySel.addEventListener('change', load);
     indicatorSel.addEventListener('change', load);
     year.addEventListener('input', ()=>{ yearLabel.textContent=year.value; });
-    year.addEventListener('change', ()=>{ const pts=chart?.data?.labels||[]; const idx=pts.indexOf(+year.value); const v=chart?.data?.datasets?.[0]?.data?.[idx]; yearVal.textContent = (typeof v==='number') ? (indicatorSel.value==='NY.GDP.PCAP.CD' ? Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(v) : v.toFixed(1)+'%') : '—'; });
+    year.addEventListener('change', ()=>{
+      const pts=chart?.data?.labels||[];
+      const idx=pts.indexOf(+year.value);
+      const v=chart?.data?.datasets?.[0]?.data?.[idx];
+      yearVal.textContent = (typeof v==='number') ? (indicatorSel.value==='NY.GDP.PCAP.CD' ? Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(v) : Number(v).toFixed(1)+'%') : '—';
+    });
 
     load();
   }
 
-  /* --------------------------- 8) Init & self-test ----------------------------- */
-  function init(){ try{ renderBadges(); bindTierButtons(); paintTier(); renderPanels(); bindTTS(); bindQuiz(); bindExplainBack(); bindGlossary(); bindData(); }catch(e){ console.error('app.js init error', e); } }
+  /* ---------------------- 8) Core topic panels (with emojis) ------------------ */
+  const CORE_LINES = {
+    trade: {
+      '6_8': [
+        '🧸 We make toys; they grow rice 🍚. We swap!',
+        '🔄 Trading helps everyone get what they need.',
+        '😊 Both sides are happier after trade.'
+      ],
+      '9_11': [
+        '🏭 Countries specialize in what they do best.',
+        '🚢 Export what’s easy; import what’s costly.',
+        '🤝 Comparative advantage makes trade win–win.'
+      ],
+      '12_14': [
+        '📉 Gains come from lower opportunity cost.',
+        '📈 Terms of trade affect each side’s gains.',
+        '🛃 Tariffs/standards shape flows & adjustment.'
+      ]
+    },
+    banks: {
+      '6_8': [
+        '🏦 Banks keep money safe.',
+        '💳 They lend money for big things.',
+        '💸 Borrowers repay with extra called interest.'
+      ],
+      '9_11': [
+        '🏦 Banks use deposits to make loans & keep reserves.',
+        '📈 Borrowers pay interest; 💰 savers may earn interest.',
+        '🛡️ Rules help banks stay safe.'
+      ],
+      '12_14': [
+        '🏦 Intermediation: savers ↔ borrowers.',
+        '📊 Banks earn a spread: loan − deposit rate.',
+        '🧮 Capital/liquidity rules control risk.'
+      ]
+    },
+    taxes: {
+      '6_8': [
+        '🤝 We all chip in a little money.',
+        '🛣️ It pays for roads, 🏫 schools, and 🏞️ parks.',
+        '🏷️ That shared money is called taxes.'
+      ],
+      '9_11': [
+        '🧾 Income tax (earnings), 🛍️ GST/VAT (purchases).',
+        '📈 Progressive = higher incomes → higher rates.',
+        '🏛️ Taxes fund public services we all use.'
+      ],
+      '12_14': [
+        '⚖️ Direct vs indirect; incidence = who bears it.',
+        '🧭 Elasticities change price/quantity effects.',
+        '🌍 Externality taxes (e.g., carbon) reduce harm.'
+      ]
+    },
+    gdp: {
+      '6_8': [
+        '🧮 GDP adds up what a country makes this year.',
+        '🧑‍⚕️ Services count too (doctors, teachers).',
+        '🙂 More GDP means more made, not always happier.'
+      ],
+      '9_11': [
+        '📚 GDP = value of goods & services this year.',
+        '🧊 Real GDP removes price changes (inflation).',
+        '👥 Per-person GDP helps compare countries.'
+      ],
+      '12_14': [
+        '🧾 Expenditure: C + I + G + NX.',
+        '📏 Real vs nominal; base-year matters.',
+        '🔍 Limits: distribution, unpaid work, environment.'
+      ]
+    }
+  };
+
+  const CORE_IDS = {
+    trade: ['panel2-1','panel2-2','panel2-3'],
+    banks: ['panel3-1','panel3-2','panel3-3'],
+    taxes: ['panel4-1','panel4-2','panel4-3'],
+    gdp:   ['panel5-1','panel5-2','panel5-3']
+  };
+
+  function renderCoreTopics(){
+    const t = getCurrentTier();
+    Object.entries(CORE_IDS).forEach(([topic, ids])=>{
+      const lines = CORE_LINES[topic] && CORE_LINES[topic][t];
+      if (!lines) return;
+      ids.forEach((id, i)=>{
+        const el = document.getElementById(id);
+        if (el) el.textContent = lines[i];
+      });
+    });
+  }
+
+  /* --------------------------- 9) Init & self-test ---------------------------- */
+  function init(){
+    try{
+      renderBadges();
+      bindTierButtons();
+      paintTier();
+
+      // First card
+      renderPanels();
+      bindTTS();
+      bindQuiz();
+      bindExplainBack();
+
+      // Glossary + Data
+      bindGlossary();
+      bindData();
+
+      // Core topics (emoji panels)
+      renderCoreTopics();
+      document.addEventListener('tierchange', renderCoreTopics);
+    }catch(e){
+      console.error('app.js init error', e);
+    }
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 
   // Self-tests
@@ -160,7 +292,6 @@
     try{
       if(!document.querySelector('.age-btn')) throw new Error('Age buttons missing');
       if(document.getElementById('panel-1')){ // homepage present
-        const t=getCurrentTier();
         renderPanels();
         if(!document.getElementById('panel-1').textContent) throw new Error('Panels not filled');
       }
