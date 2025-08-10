@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NewsPlay — Kid‑Friendly Current Affairs Starter</title>
-  <!-- Tailwind (CDN) for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for the Time‑Travel Data widget -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
@@ -26,6 +24,7 @@
         <a href="lab-sd.html" class="pop px-3 py-2 rounded-xl bg-emerald-100">⚖️ Supply & Demand Lab</a>
         <a href="lab-budget.html" class="pop px-3 py-2 rounded-xl bg-amber-100">💰 Budget Builder</a>
         <a href="create-comic.html" class="pop px-3 py-2 rounded-xl bg-pink-100">🎨 Comic Studio</a>
+        <a href="learn-deck.html" class="pop px-3 py-2 rounded-xl bg-violet-100">📚 Learn Deck</a>
         <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-slate-200">📚 Glossary</button>
         <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Stickers:</span><div id="badge-shelf" class="flex gap-1"></div></div>
       </nav>
@@ -39,15 +38,15 @@
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <h2 class="font-bold">Age switcher</h2>
         <div class="flex gap-2" role="tablist" aria-label="Age tiers">
-          <button id="age-6-8" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
-          <button id="age-9-11" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
-          <button id="age-12-14" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
         </div>
       </div>
       <p class="mt-2 text-sm text-slate-600">Tip: This instantly changes wording and examples everywhere.</p>
     </section>
 
-    <!-- STORY CARDS / MINI‑COMICS -->
+    <!-- STORY CARDS / MINI‑COMICS (first four need to be populated) -->
     <section class="mt-6 grid md:grid-cols-2 gap-6">
       <!-- 1) PRICES / INFLATION (built‑in quiz) -->
       <article class="p-5 bg-white rounded-2xl shadow">
@@ -207,7 +206,7 @@
           <div class="comic-panel rounded-xl bg-green-50 p-3" id="panel5-3"></div>
         </div>
       </article>
-      <!-- Note: extra topic cards + fallback quizzes are injected by extras.js below -->
+      <!-- Extra topic cards + fallback quizzes are injected by extras.js below -->
     </section>
 
     <!-- GLOSSARY MODAL -->
@@ -227,8 +226,38 @@
     </footer>
   </main>
 
-  <!-- Scripts (absolute paths for GitHub Pages) -->
-  <script src="/newsplay/app.js?v=2" defer></script>
-  <script src="/newsplay/extras.js?v=2" defer></script>
+  <!-- Primary scripts (absolute paths for GitHub Pages) -->
+  <script src="/newsplay/app.js?v=6" defer></script>
+  <script src="/newsplay/extras.js?v=6" defer></script>
+
+  <!-- Self‑healing loader for first four cards: if app.js didn’t run, try to recover without breaking anything else. -->
+  <script>
+  (function(){
+    function tier(){
+      const btn=document.querySelector('.age-btn.text-white');
+      return (btn&&btn.dataset&&btn.dataset.tier)||'6_8';
+    }
+    const LINES={
+      '6_8':['Bananas are super popular today!','Only a few boxes arrived.','When lots want it but there is little, prices go up.'],
+      '9_11':['High demand for bananas today.','Supply trucks were delayed.','When demand↑ and supply↓, price tends to rise.'],
+      '12_14':['Demand spike meets supply constraint.','Logistics reduce deliveries.','Price rises as the market finds a new equilibrium.']
+    };
+    function rescuePanels(){
+      if(window.NP_READY) return; // app.js already took over
+      const a=LINES[tier()]||LINES['6_8'];
+      ['panel-1','panel-2','panel-3'].forEach((id,i)=>{ const el=document.getElementById(id); if(el && !el.textContent.trim()) el.textContent=a[i]; });
+    }
+    function tryFallbackLoad(){
+      if(window.NP_READY) return;
+      // attempt an absolute‑path reload for app.js once
+      var s=document.createElement('script'); s.src='/newsplay/app.js?v=fallback'; s.defer=true; s.onload=function(){ console.log('app.js fallback loaded'); };
+      document.body.appendChild(s);
+    }
+    window.addEventListener('DOMContentLoaded', function(){
+      setTimeout(function(){ if(!window.NP_READY) tryFallbackLoad(); }, 350);
+      setTimeout(rescuePanels, 800);
+    });
+  })();
+  </script>
 </body>
 </html>
