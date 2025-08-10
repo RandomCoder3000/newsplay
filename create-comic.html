@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewsPlay — Comic Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
+    .comic-surface{background:linear-gradient(180deg,#fff 0%,#f8fafc 100%)}
+    .panel{position:relative; min-height:240px;}
+    .bubble{position:absolute; max-width:85%; padding:.6rem .8rem; border-radius:16px; background:#ffffff; border:3px solid #0f172a; box-shadow:4px 4px 0 rgba(15,23,42,.15); cursor:grab}
+    .bubble:active{cursor:grabbing}
+    .sticker{position:absolute; font-size:28px; cursor:grab}
+    .drag-hint{position:absolute; bottom:6px; right:10px; font-size:10px; opacity:.6}
+    .comic-title{text-shadow:0 2px 0 rgba(255,255,255,.8)}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-fuchsia-50 to-white text-slate-800">
+  <header class="max-w-5xl mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <a href="./" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight comic-title">🎨 NewsPlay <span class="text-indigo-600">Comic Studio</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div></div>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+        </div>
+      </div>
+    </div>
+    <p id="hero-sub" class="mt-2 text-slate-600">Pick a topic, auto‑fill 3 panels, move bubbles & stickers, then export your comic!</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24">
+    <!-- Controls -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <div class="grid md:grid-cols-5 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="text-sm">Topic</label>
+          <select id="sel-topic" class="w-full border rounded-xl p-2">
+            <option value="prices">Prices & Inflation</option>
+            <option value="trade">Trade</option>
+            <option value="banks">Banks</option>
+            <option value="taxes">Taxes</option>
+            <option value="gdp">GDP</option>
+            <option value="budget">Budget</option>
+            <option value="fx">Exchange Rate</option>
+            <option value="recession">Recession</option>
+            <option value="unemployment">Unemployment</option>
+            <option value="supplydemand">Supply & Demand</option>
+            <option value="stocksbonds">Stocks vs Bonds</option>
+            <option value="supplychain">Supply Chain</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm">Theme</label>
+          <select id="sel-theme" class="w-full border rounded-xl p-2">
+            <option value="sunny">Sunny</option>
+            <option value="ocean">Ocean</option>
+            <option value="forest">Forest</option>
+            <option value="sunset">Sunset</option>
+            <option value="cotton">Cotton Candy</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-shuffle" class="pop px-3 py-2 rounded-xl bg-indigo-600 text-white w-full">🎲 Shuffle text</button>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-read" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white w-full">🔊 Read script</button>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button id="btn-add-all-bubbles" class="pop px-3 py-2 rounded-xl bg-indigo-100">＋ Bubbles</button>
+        <button id="btn-add-all-stickers" class="pop px-3 py-2 rounded-xl bg-amber-100">＋ Stickers</button>
+        <button id="btn-export" class="pop px-3 py-2 rounded-xl bg-fuchsia-600 text-white">📷 Export PNG</button>
+        <button id="btn-reset" class="pop px-3 py-2 rounded-xl bg-slate-200">Reset</button>
+      </div>
+    </section>
+
+    <!-- Comic canvas -->
+    <section class="mt-6 p-4 comic-surface rounded-2xl shadow" id="capture-root">
+      <div id="comic" class="grid md:grid-cols-3 gap-3">
+        <div class="p-4 rounded-2xl shadow bg-gradient-to-br from-orange-50 to-yellow-50 panel" id="panel-1">
+          <div class="text-xs text-slate-500">Panel 1</div>
+          <div class="drag-hint">Drag bubbles & stickers</div>
+        </div>
+        <div class="p-4 rounded-2xl shadow bg-gradient-to-br from-sky-50 to-cyan-50 panel" id="panel-2">
+          <div class="text-xs text-slate-500">Panel 2</div>
+          <div class="drag-hint">Drag bubbles & stickers</div>
+        </div>
+        <div class="p-4 rounded-2xl shadow bg-gradient-to-br from-emerald-50 to-teal-50 panel" id="panel-3">
+          <div class="text-xs text-slate-500">Panel 3</div>
+          <div class="drag-hint">Drag bubbles & stickers</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sticker palette -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="font-bold">Stickers</h2>
+      <div class="mt-2 flex flex-wrap gap-2 text-lg" id="palette"></div>
+      <p class="text-xs text-slate-500 mt-1">Tip: Click a sticker to add it to the last clicked panel. Drag to move; double‑click a bubble to edit text. Use Reset to clear.</p>
+    </section>
+  </main>
+
+  <script>
+  /************ 0) Shared storage & badges ************/
+  const PREFS_KEY='np_prefs_v1';
+  const BADGES_KEY='np_badges_v1';
+  function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{};}catch{return{}} }
+  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+  function savePref(k,v){ const p=getPrefs(); p[k]=v; setPrefs(p); }
+  function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
+  function addBadge(name,emoji){ const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); burst(); } }
+  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+  function burst(){ const c=document.body; for(let i=0;i<12;i++){ const s=document.createElement('span'); s.textContent=['🎉','⭐','✨'][i%3]; s.style.position='fixed'; s.style.left=(50+Math.random()*6-3)+'%'; s.style.top='40%'; s.style.fontSize=(16+Math.random()*14)+'px'; s.style.pointerEvents='none'; s.style.transition='transform 900ms ease, opacity 900ms ease'; c.appendChild(s); requestAnimationFrame(()=>{ s.style.transform=`translate(${(Math.random()*160-80)}px, ${180+Math.random()*180}px) rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }); setTimeout(()=>s.remove(),1000); } }
+
+  /************ 1) Tiering ************/
+  let currentTier=(function(){ const p=getPrefs(); return p.tier||'6_8'; })();
+  function paintTier(){
+    document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    const active=document.querySelector(`.age-btn[data-tier="${currentTier}"]`);
+    if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+  }
+  document.querySelectorAll('.age-btn').forEach(btn=> btn.addEventListener('click',()=>{ currentTier=btn.dataset.tier; savePref('tier',currentTier); paintTier(); fillPanels(); }));
+
+  /************ 2) Prompt bank (3 panels per topic, tier‑aware) ************/
+  const PROMPTS={
+    prices:{
+      '6_8':['Bananas are popular today!','Only a few boxes arrived.','Price goes up when many want but few exist.'],
+      '9_11':['High demand for bananas today.','Supply trucks got delayed.','When demand↑ and supply↓ → prices rise.'],
+      '12_14':['Demand spike hits the market.','Supply disruption from logistics.','Price rises as equilibrium shifts up.']
+    },
+    trade:{
+      '6_8':['We make toys well.','They grow rice well.','Trading helps both sides!'],
+      '9_11':['Country A specializes in toys.','Country B in rice.','Trade increases variety and total output.'],
+      '12_14':['Comparative advantage in toys vs rice.','Lower opportunity cost by specializing.','Gains from trade raise welfare.']
+    },
+    banks:{
+      '6_8':['I save my money here.','Bank lends to people for homes.','Interest is the thank‑you money.'],
+      '9_11':['Deposits fund loans.','Banks keep reserves.','Borrowers repay with interest.'],
+      '12_14':['Intermediation: deposits → loans.','Reserve ratios manage liquidity risk.','Interest spreads cover costs & risk.']
+    },
+    taxes:{
+      '6_8':['We all chip in a little.','That pays for parks and roads.','It helps everyone.'],
+      '9_11':['Taxes fund services like schools.','Sales tax is on things you buy.','Income tax increases with earnings.'],
+      '12_14':['Public goods & redistribution.','Indirect vs direct taxes.','Progressivity by income brackets.']
+    },
+    gdp:{
+      '6_8':['How much stuff we make.','Add up goods and services.','Bigger number means more made.'],
+      '9_11':['GDP totals a country’s production.','Used items don’t count.','Real GDP removes price effects.'],
+      '12_14':['Sum of value added domestically.','Excludes second‑hand sales.','Per‑capita adjusts for population.']
+    },
+    budget:{
+      '6_8':['Plan money like a map.','Needs first, then wants.','Save a little too!'],
+      '9_11':['Compare income vs spending.','Avoid deficits by planning.','Keep a saving habit.'],
+      '12_14':['Allocate scarce resources.','Watch deficits/surpluses.','Set priorities & buffers.']
+    },
+    fx:{
+      '6_8':['Different countries, different money.','We swap money when we travel.','The rate says how much.'],
+      '9_11':['1 USD may equal many rupees.','If your money buys less, it weakened.','Banks & markets move rates.'],
+      '12_14':['Floating vs fixed regimes.','Appreciation/depreciation dynamics.','Policy & trade flows matter.']
+    },
+    recession:{
+      '6_8':['When the economy slows.','Shops sell less for a while.','It recovers later.'],
+      '9_11':['Production shrinks for months.','Spending and jobs fall.','Policies aim to boost demand.'],
+      '12_14':['Broad, persistent downturn.','Measured by GDP, jobs, sales.','Stabilization tools respond.']
+    },
+    unemployment:{
+      '6_8':['Some grown‑ups want jobs.','They are looking hard.','Communities try to help.'],
+      '9_11':['Share of people job‑hunting.','Some search between jobs.','Training can help skills fit.'],
+      '12_14':['Frictional, structural, cyclical types.','Rate = unemployed / labor force.','Policy targets root causes.']
+    },
+    supplydemand:{
+      '6_8':['Supply is how much there is.','Demand is how much people want.','They meet at a price.'],
+      '9_11':['If demand rises, price can rise.','If supply rises, price can fall.','They balance at equilibrium.'],
+      '12_14':['Shifts vs moves along curves.','Input costs & tastes shift curves.','Equilibrium solves Qd=Qs.']
+    },
+    stocksbonds:{
+      '6_8':['A stock is a tiny piece of a company.','A bond is money you lend.','People use both to grow savings.'],
+      '9_11':['Stocks can jump up or down.','Bonds pay regular interest.','Mixing both balances risk.'],
+      '12_14':['Equity vs debt instruments.','Yield, risk, duration.','Diversification improves outcomes.']
+    },
+    supplychain:{
+      '6_8':['Things travel from makers to you.','Trucks and ships help.','If one step is slow, all wait.'],
+      '9_11':['Steps: factory→transport→store.','Delays raise costs.','Prices can change from bottlenecks.'],
+      '12_14':['Network of suppliers/logistics.','Bottlenecks ripple through markets.','Resilience via buffers & sourcing.']
+    }
+  };
+
+  const THEMES={
+    sunny:['from-orange-50 to-yellow-50','from-sky-50 to-cyan-50','from-emerald-50 to-teal-50'],
+    ocean:['from-sky-50 to-blue-50','from-cyan-50 to-teal-50','from-indigo-50 to-sky-50'],
+    forest:['from-lime-50 to-emerald-50','from-green-50 to-teal-50','from-emerald-50 to-green-50'],
+    sunset:['from-rose-50 to-orange-50','from-amber-50 to-rose-50','from-fuchsia-50 to-purple-50'],
+    cotton:['from-fuchsia-50 to-pink-50','from-pink-50 to-rose-50','from-amber-50 to-yellow-50']
+  };
+
+  const STICKERS=['😀','💡','📈','🏦','🧮','🌍','🚚','📊','🧠','💸','🍌','🛒','🧱','⚙️','🎉'];
+
+  /************ 3) Utilities ************/
+  function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+  function last(arr){ return arr[arr.length-1]; }
+  function within(x,min,max){ return Math.max(min, Math.min(max,x)); }
+
+  /************ 4) Bubbles & stickers (drag within panel) ************/
+  let lastPanel=document.getElementById('panel-1');
+  document.querySelectorAll('.panel').forEach(p=> p.addEventListener('pointerdown',()=> lastPanel=p));
+
+  function addBubble(panel, text){
+    const box = el(`<div class="bubble" contenteditable="true">${text||'Double‑click to edit'}</div>`);
+    positionCenter(panel, box);
+    enableDrag(panel, box);
+    panel.appendChild(box);
+    awardFirsts();
+    return box;
+  }
+  function addSticker(panel, emoji){
+    const s=el(`<div class="sticker" role="img" aria-label="sticker">${emoji}</div>`);
+    positionCenter(panel, s);
+    enableDrag(panel, s);
+    panel.appendChild(s);
+    awardFirsts();
+  }
+  function positionCenter(panel, node){
+    const r=panel.getBoundingClientRect();
+    node.style.left = (r.width/2 - 40) + 'px';
+    node.style.top = (r.height/2 - 20) + 'px';
+  }
+  function enableDrag(panel,node){
+    let sx=0, sy=0, ox=0, oy=0; node.style.touchAction='none';
+    node.addEventListener('pointerdown', (e)=>{ node.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; const rs=node.getBoundingClientRect(); const ps=panel.getBoundingClientRect(); ox=rs.left-ps.left; oy=rs.top-ps.top; });
+    node.addEventListener('pointermove', (e)=>{ if(!node.hasPointerCapture(e.pointerId)) return; const ps=panel.getBoundingClientRect(); let nx = ox + (e.clientX - sx); let ny = oy + (e.clientY - sy); nx=within(nx,0, ps.width - node.offsetWidth); ny=within(ny,0, ps.height - node.offsetHeight); node.style.left=nx+'px'; node.style.top=ny+'px'; });
+    node.addEventListener('pointerup', (e)=>{ try{ node.releasePointerCapture(e.pointerId);}catch{} });
+    // delete with Alt+click (desktop) or long-press (mobile)
+    node.addEventListener('click', (e)=>{ if(e.altKey){ node.remove(); }});
+    let pressTimer=null; node.addEventListener('pointerdown',()=>{ pressTimer=setTimeout(()=>{ node.remove(); },900); }); node.addEventListener('pointerup',()=>clearTimeout(pressTimer)); node.addEventListener('pointerleave',()=>clearTimeout(pressTimer));
+  }
+
+  /************ 5) Fill panels from prompt bank ************/
+  function panel(i){ return document.getElementById('panel-'+i); }
+  function clearPanels(){ for(let i=1;i<=3;i++){ panel(i).querySelectorAll('.bubble,.sticker').forEach(n=>n.remove()); } }
+  function themePanels(theme){
+    const arr = THEMES[theme] || THEMES.sunny;
+    [1,2,3].forEach((i)=>{
+      const p=panel(i);
+      const fromTo = arr[i-1].split(' ');
+      // reset base classes then apply gradient
+      p.className='p-4 rounded-2xl shadow panel bg-gradient-to-br '+arr[i-1];
+    });
+  }
+  function fillPanels(){
+    const topic=document.getElementById('sel-topic').value;
+    const lines=(PROMPTS[topic]||PROMPTS.prices)[currentTier];
+    clearPanels();
+    [1,2,3].forEach((i)=> addBubble(panel(i), lines[i-1]));
+  }
+
+  /************ 6) Palette & actions ************/
+  const palette=document.getElementById('palette');
+  STICKERS.forEach(e=>{ const b=el(`<button class="pop px-3 py-2 rounded-xl bg-slate-100">${e}</button>`); b.addEventListener('click',()=> addSticker(lastPanel,e)); palette.appendChild(b); });
+
+  document.getElementById('btn-shuffle').addEventListener('click',()=>{
+    const t=document.getElementById('sel-topic'); const opts=[...t.options]; t.selectedIndex = Math.floor(Math.random()*opts.length);
+    document.getElementById('sel-theme').selectedIndex = Math.floor(Math.random()*Object.keys(THEMES).length);
+    themePanels(document.getElementById('sel-theme').value); fillPanels();
+  });
+  document.getElementById('btn-read').addEventListener('click',()=>{
+    if(!('speechSynthesis' in window)) return alert('Text‑to‑Speech not supported in this browser.');
+    const texts=[...document.querySelectorAll('.bubble')].slice(-3).map(b=>b.textContent).join(' ');
+    const u=new SpeechSynthesisUtterance(texts); u.rate=currentTier==='6_8'?0.9:1; speechSynthesis.cancel(); speechSynthesis.speak(u);
+  });
+  document.getElementById('btn-add-all-bubbles').addEventListener('click',()=> fillPanels());
+  document.getElementById('btn-add-all-stickers').addEventListener('click',()=>{
+    ['😀','💡','📊'].forEach((s,i)=> addSticker(panel(i+1), s));
+  });
+  document.getElementById('btn-reset').addEventListener('click',()=>{ clearPanels(); });
+
+  document.getElementById('sel-theme').addEventListener('change', (e)=> themePanels(e.target.value));
+  document.getElementById('sel-topic').addEventListener('change', fillPanels);
+
+  /************ 7) Export ************/
+  document.getElementById('btn-export').addEventListener('click', async()=>{
+    const root=document.getElementById('capture-root');
+    // temporarily remove drag hints
+    document.querySelectorAll('.drag-hint').forEach(h=> h.style.display='none');
+    const canvas=await html2canvas(root,{scale:2});
+    document.querySelectorAll('.drag-hint').forEach(h=> h.style.display='');
+    const url=canvas.toDataURL('image/png');
+    const a=document.createElement('a'); a.href=url; a.download='newsplay-comic.png'; a.click();
+    addBadge('Comic Creator','🖌️');
+  });
+
+  /************ 8) Init ************/
+  function init(){ paintTier(); renderBadges(); themePanels('sunny'); fillPanels(); }
+  init();
+
+  /************ 9) Self-tests (console) ************/
+  function awardFirsts(){ if(document.querySelectorAll('.bubble').length>=3) addBadge('Story Architect','📚'); }
+  (function tests(){
+    console.group('%cComic Studio Self-tests','color:#a21caf;font-weight:bold');
+    try{
+      if(!document.getElementById('panel-1')) throw new Error('Panel missing');
+      const before=document.querySelectorAll('.bubble').length; addBubble(panel(1),'test'); const after=document.querySelectorAll('.bubble').length; if(after!==before+1) throw new Error('bubble add failed');
+      clearPanels();
+      console.log('✓ Panels & bubble ops OK');
+    }catch(e){ console.error('Self-test failed',e); }
+    console.groupEnd();
+  })();
+  </script>
+</body>
+</html>
