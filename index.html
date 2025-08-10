@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewsPlay — Kid‑Friendly Current Affairs Starter</title>
+  <!-- Tailwind (CDN) for fast styling; safe to remove and use your own CSS later -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for the time‑travel data chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Simple, friendly motion */
+    .pop { transition: transform 120ms ease; }
+    .pop:active { transform: scale(0.98); }
+    .comic-panel { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-indigo-50 to-white min-h-screen text-slate-800">
+  <header class="max-w-5xl mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
+      <a class="text-sm underline hover:no-underline" href="#how-to">Publish ➜</a>
+    </div>
+    <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24">
+    <!-- AGE SELECTOR -->
+    <section class="mt-6 p-4 bg-white/70 backdrop-blur rounded-2xl shadow">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h2 class="font-bold">Age switcher</h2>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button id="age-6-8" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button id="age-9-11" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button id="age-12-14" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+        </div>
+      </div>
+      <p class="mt-2 text-sm text-slate-600">Tip: This instantly changes wording and examples everywhere.</p>
+    </section>
+
+    <!-- STORY CARD / MINI‑COMIC -->
+    <section class="mt-6 grid md:grid-cols-2 gap-6">
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story-title">Why do prices change?</h3>
+            <a id="story-source" class="text-xs text-indigo-600 underline" href="https://en.wikipedia.org/wiki/Inflation" target="_blank" rel="noreferrer">Source link</a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+
+        <!-- 3‑panel mini‑comic -->
+        <div class="mt-4 grid grid-cols-3 gap-3" id="comic">
+          <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel-1"></div>
+          <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel-2"></div>
+          <div class="comic-panel rounded-xl bg-lime-50 p-3" id="panel-3"></div>
+        </div>
+
+        <!-- Explain‑Back (voice or text) -->
+        <div class="mt-5 p-3 rounded-xl bg-slate-50">
+          <h4 class="font-semibold">Explain‑Back 🎤</h4>
+          <p class="text-sm text-slate-600">In 15 seconds, try to explain the story in your own words! (Use the mic or type.)</p>
+          <div class="mt-2 flex flex-wrap gap-2 items-center">
+            <button id="btn-record" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">🎙️ Start/Stop</button>
+            <span id="record-status" class="text-xs text-slate-500">Mic: idle</span>
+          </div>
+          <textarea id="explain-text" class="mt-2 w-full h-24 p-2 rounded-lg border" placeholder="Or type your explanation here..."></textarea>
+          <button id="btn-score" class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">✨ Get kind feedback</button>
+          <p id="score-output" class="mt-2 text-sm"></p>
+        </div>
+      </article>
+
+      <!-- TIME‑TRAVEL DATA (World Bank GDP per person) -->
+      <aside class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-xl font-bold">Time‑Travel Data ⏳</h3>
+          <div class="flex gap-2 items-center">
+            <label for="country" class="text-sm">Country</label>
+            <select id="country" class="border rounded-lg p-2">
+              <option value="IND" selected>India</option>
+              <option value="USA">United States</option>
+              <option value="GBR">United Kingdom</option>
+              <option value="IDN">Indonesia</option>
+              <option value="BRA">Brazil</option>
+            </select>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600">Indicator: GDP per person (current US$)</p>
+        <canvas id="chart" class="mt-3"></canvas>
+        <div class="mt-4">
+          <label for="year" class="text-sm">Slide through years: <span id="year-label"></span></label>
+          <input id="year" type="range" min="2000" max="2023" value="2016" class="w-full">
+          <div class="text-sm mt-1">Value: <span id="year-value">—</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- HOW‑TO PUBLISH -->
+    <section id="how-to" class="mt-10 p-5 bg-white rounded-2xl shadow">
+      <h3 class="text-xl font-bold">Publish this in 10 minutes 🚀</h3>
+      <ol class="list-decimal ml-6 mt-2 space-y-2 text-sm">
+        <li>Open <strong>github.com</strong> → create an account (ask a parent to help) → New repository → name it <code>newsplay</code> → Add file → <em>Create new file</em>.</li>
+        <li>Name the file <code>index.html</code> and paste everything from this page’s source (Ctrl/Cmd+A → Ctrl/Cmd+C).</li>
+        <li>Click <em>Commit</em>. Then go to <em>Settings → Pages</em> → <em>Deploy from branch</em> → pick <code>main</code> and <code>/ (root)</code>.</li>
+        <li>Wait a minute. Your site will appear at <code>https://&lt;your‑name&gt;.github.io/newsplay</code>. Share the link with friends!</li>
+      </ol>
+      <p class="mt-3 text-sm text-slate-600">No servers, no databases needed. All data in this starter is public or on the user’s device.</p>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="mt-10 text-center text-xs text-slate-500">
+      <p>Built for kids. No ads, no trackers. You own your data on this page.</p>
+    </footer>
+  </main>
+
+  <script>
+    /******************
+     * 1) AGE‑ADAPTIVE STORY CONTENT
+     ******************/
+    const story = {
+      title: "Why do prices change?",
+      panels: {
+        "6_8": [
+          "🍌 Panel 1: Your banana costs 10 coins yesterday.",
+          "🏪 Panel 2: Storms hurt farms. Fewer bananas arrive.",
+          "💡 Panel 3: With less bananas, shops raise prices. This is called price rise."
+        ],
+        "9_11": [
+          "📈 When many people want an item but fewer are available, the price often goes up.",
+          "🌧️ Bad weather or higher fuel costs can make it harder to bring goods to shops.",
+          "🧠 This price increase across many things is called inflation."
+        ],
+        "12_14": [
+          "🔍 Prices change with supply and demand. Lower supply or higher demand pushes prices up.",
+          "⛽ Transport and energy costs also ripple into final prices you see.",
+          "🧮 When average prices rise broadly over time, that’s inflation (often tracked by CPI)."
+        ]
+      },
+      source: "https://en.wikipedia.org/wiki/Inflation"
+    };
+
+    let currentTier = "6_8";
+
+    function renderStory() {
+      document.getElementById('story-title').textContent = story.title;
+      document.getElementById('story-source').href = story.source;
+      const panels = story.panels[currentTier];
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`panel-${i+1}`).textContent = panels[i];
+      }
+    }
+
+    // Age switcher
+    document.querySelectorAll('.age-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.age-btn').forEach(b => b.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+        btn.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+        currentTier = btn.dataset.tier;
+        renderStory();
+      });
+    });
+
+    // Text‑to‑Speech (browser Web Speech API)
+    document.getElementById('btn-tts').addEventListener('click', () => {
+      const text = story.panels[currentTier].join(' ');
+      if (!('speechSynthesis' in window)) {
+        alert('Text‑to‑Speech not supported in this browser.');
+        return;
+      }
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = currentTier === '6_8' ? 0.9 : 1;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    });
+
+    // Explain‑Back — simple kindness scorer (on‑device; no AI key needed)
+    document.getElementById('btn-score').addEventListener('click', () => {
+      const t = document.getElementById('explain-text').value.trim();
+      const out = document.getElementById('score-output');
+      if (t.length < 20) {
+        out.textContent = 'Nice start! Try adding 1) what changed, 2) why it changed, 3) the word inflation.';
+        return;
+      }
+      let points = 1;
+      if (/price|prices/i.test(t)) points++;
+      if (/supply|demand/i.test(t)) points++;
+      if (/inflation/i.test(t)) points++;
+      const messages = {
+        1: 'Great effort! Try to mention prices and why they changed.',
+        2: 'Good! You noticed prices changed. Can you add supply or demand?',
+        3: 'Strong! You used key ideas. One more detail would make it excellent.',
+        4: 'Excellent explanation! You covered the big ideas 🎉'
+      };
+      out.textContent = messages[Math.min(points,4)];
+    });
+
+    // Optional: voice to text (only in some browsers)
+    let recognizing = false;
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => { document.getElementById('record-status').textContent = 'Mic: recording…'; };
+      recognition.onend = () => { recognizing = false; document.getElementById('record-status').textContent = 'Mic: stopped'; };
+      recognition.onresult = (e) => {
+        const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ');
+        document.getElementById('explain-text').value = transcript;
+      };
+    }
+
+    document.getElementById('btn-record').addEventListener('click', async () => {
+      if (!recognition) { alert('Speech recognition not supported here. You can type instead!'); return; }
+      if (!recognizing) { recognizing = true; recognition.start(); } else { recognition.stop(); }
+    });
+
+    renderStory();
+
+    /******************
+     * 2) WORLD BANK DATA CHART (GDP per capita) — no API key needed
+     ******************/
+    const chartCtx = document.getElementById('chart');
+    let chart;
+
+    async function fetchGDPpc(country3 = 'IND') {
+      // World Bank API: indicator NY.GDP.PCAP.CD, format=json, per page=20000 to get all years
+      const url = `https://api.worldbank.org/v2/country/${country3}/indicator/NY.GDP.PCAP.CD?format=json&per_page=20000`;
+      const res = await fetch(url);
+      const data = await res.json();
+      // data[1] has an array sorted newest→oldest; we’ll collect 2000–2023
+      const rows = (data[1] || []).filter(r => r.date >= '2000' && r.date <= '2023').reverse();
+      const years = rows.map(r => +r.date);
+      const values = rows.map(r => (r.value == null ? null : Math.round(r.value)));
+      return { years, values };
+    }
+
+    function renderChart(years, values) {
+      if (chart) chart.destroy();
+      chart = new Chart(chartCtx, {
+        type: 'line',
+        data: { labels: years, datasets: [{ label: 'GDP per person (US$)', data: values, tension: 0.25, pointRadius: 2 }] },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v)=>'$'+v.toLocaleString() } } }
+        }
+      });
+    }
+
+    async function loadCountry(c) {
+      const { years, values } = await fetchGDPpc(c);
+      renderChart(years, values);
+      const yearInput = document.getElementById('year');
+      const yearLabel = document.getElementById('year-label');
+      const yearValue = document.getElementById('year-value');
+      yearInput.min = years[0];
+      yearInput.max = years[years.length - 1];
+      yearInput.value = years[Math.floor(years.length/2)];
+
+      function updateFromSlider() {
+        const y = +yearInput.value;
+        yearLabel.textContent = y;
+        const idx = years.indexOf(y);
+        const v = values[idx];
+        yearValue.textContent = (v ? '$' + v.toLocaleString() : 'No data');
+      }
+      yearInput.oninput = updateFromSlider;
+      updateFromSlider();
+    }
+
+    document.getElementById('country').addEventListener('change', (e)=> loadCountry(e.target.value));
+    loadCountry('IND');
+  </script>
+</body>
+</html>
