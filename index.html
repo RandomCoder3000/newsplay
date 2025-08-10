@@ -19,6 +19,7 @@
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between">
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
+      
     </div>
     <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
   </header>
@@ -94,6 +95,50 @@
           <div class="text-sm mt-1">Value: <span id="year-value">—</span></div>
         </div>
       </aside>
+
+      <!-- SECOND STORY CARD -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story2-title">Why do countries trade?</h3>
+            <a id="story2-source" class="text-xs text-indigo-600 underline" 
+               href="https://en.wikipedia.org/wiki/International_trade" target="_blank" rel="noreferrer">
+              Source link
+            </a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-2" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-sky-50 p-3" id="panel2-1"></div>
+          <div class="comic-panel rounded-xl bg-cyan-50 p-3" id="panel2-2"></div>
+          <div class="comic-panel rounded-xl bg-teal-50 p-3" id="panel2-3"></div>
+        </div>
+      </article>
+
+      <!-- THIRD STORY CARD -->
+      <article class="p-5 bg-white rounded-2xl shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold" id="story3-title">How do banks work?</h3>
+            <a id="story3-source" class="text-xs text-indigo-600 underline" 
+               href="https://en.wikipedia.org/wiki/Bank" target="_blank" rel="noreferrer">
+              Source link
+            </a>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-tts-3" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="comic-panel rounded-xl bg-fuchsia-50 p-3" id="panel3-1"></div>
+          <div class="comic-panel rounded-xl bg-purple-50 p-3" id="panel3-2"></div>
+          <div class="comic-panel rounded-xl bg-violet-50 p-3" id="panel3-3"></div>
+        </div>
+      </article>
     </section>
 
     <!-- HOW‑TO PUBLISH -->
@@ -131,6 +176,98 @@
       source: "https://en.wikipedia.org/wiki/Inflation"
     };
 
+    const story2 = {
+      title: "Why do countries trade?",
+      panels: {
+        "6_8": [
+          "🌾 Panel 1: One country grows lots of rice. Another makes great toys.",
+          "🚢 Panel 2: They swap—rice for toys—so both have what they need.",
+          "🤝 Panel 3: Trading helps people get more choices at good prices."
+        ],
+        "9_11": [
+          "📦 Countries trade when each can make some things easier or cheaper.",
+          "💱 Swapping (import/export) means more variety and sometimes lower prices.",
+          "🧠 This idea is called specialization—do what you’re best at, trade for the rest."
+        ],
+        "12_14": [
+          "⚖️ Trade is driven by comparative advantage—produce where opportunity cost is lowest.",
+          "🌍 Imports/exports increase variety, efficiency, and can lower average prices.",
+          "🧭 Downsides can include job shifts or dependence; policies try to balance these."
+        ]
+      },
+      source: "https://en.wikipedia.org/wiki/International_trade"
+    };
+
+    function renderStory2() {
+      document.getElementById('story2-title').textContent = story2.title;
+      document.getElementById('story2-source').href = story2.source;
+      const panels = story2.panels[currentTier];
+      document.getElementById('panel2-1').textContent = panels[0];
+      document.getElementById('panel2-2').textContent = panels[1];
+      document.getElementById('panel2-3').textContent = panels[2];
+    }
+
+    // Second card Text-to-Speech
+    (function(){
+      const btn2 = document.getElementById('btn-tts-2');
+      if (btn2) {
+        btn2.addEventListener('click', () => {
+          const text = story2.panels[currentTier].join(' ');
+          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = currentTier === '6_8' ? 0.9 : 1;
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utter);
+        });
+      }
+    })();
+
+    const story3 = {
+      title: "How do banks work?",
+      panels: {
+        "6_8": [
+          "🏦 Panel 1: People put money in a bank to keep it safe.",
+          "💸 Panel 2: The bank keeps some money and lends the rest to people and businesses.",
+          "➕ Panel 3: Loans are paid back later with a little extra called interest."
+        ],
+        "9_11": [
+          "📥 Banks hold deposits and use part of them to make loans.",
+          "📈 Borrowers pay interest; savers may earn a smaller interest.",
+          "🛡️ Rules make banks keep a safe reserve so people can withdraw cash."
+        ],
+        "12_14": [
+          "📊 Banks take deposits (liabilities) and make loans (assets); lending can create new deposit money.",
+          "💱 Interest is the price of borrowing; the spread between loan and deposit rates is income.",
+          "🏛️ Central banks influence rates/reserves; risk controls help prevent bank runs."
+        ]
+      },
+      source: "https://en.wikipedia.org/wiki/Bank"
+    };
+
+    function renderStory3() {
+      document.getElementById('story3-title').textContent = story3.title;
+      document.getElementById('story3-source').href = story3.source;
+      const panels = story3.panels[currentTier];
+      document.getElementById('panel3-1').textContent = panels[0];
+      document.getElementById('panel3-2').textContent = panels[1];
+      document.getElementById('panel3-3').textContent = panels[2];
+    }
+
+    // Third card Text-to-Speech
+    (function(){
+      const btn3 = document.getElementById('btn-tts-3');
+      if (btn3) {
+        btn3.addEventListener('click', () => {
+          const text = story3.panels[currentTier].join(' ');
+          if (!('speechSynthesis' in window)) { alert('Text-to-Speech not supported in this browser.'); return; }
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = currentTier === '6_8' ? 0.9 : 1;
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utter);
+        });
+      }
+    })();
+
     let currentTier = "6_8";
 
     function renderStory() {
@@ -149,6 +286,8 @@
         btn.className = 'age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
         currentTier = btn.dataset.tier;
         renderStory();
+    if (typeof renderStory2 === 'function') renderStory2();
+    if (typeof renderStory3 === 'function') renderStory3();
       });
     });
 
@@ -209,6 +348,8 @@
     });
 
     renderStory();
+    if (typeof renderStory2 === 'function') renderStory2();
+    if (typeof renderStory3 === 'function') renderStory3();
 
     /******************
      * 2) WORLD BANK DATA CHART (GDP per capita) — no API key needed
