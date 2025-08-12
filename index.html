@@ -3,33 +3,59 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NewsPlay — Kid‑Friendly Current Affairs Starter</title>
+  <title>NewsPlay — Kid-Friendly Current Affairs Starter</title>
+  <!-- Tailwind (CDN) for fast styling -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for the time-travel data chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
-    .comic-panel{box-shadow:inset 0 0 0 3px rgba(0,0,0,.06)}
-    :root{--bg:#f8fafc;--surface:#fff;--text:#0f172a}
-    body{color:var(--text);background:linear-gradient(to bottom,#eef2ff,#ffffff)}
-    .modal{display:none}.modal.show{display:flex}
+    /* Simple, friendly motion */
+    .pop { transition: transform 120ms ease; }
+    .pop:active { transform: scale(0.98); }
+    .comic-panel { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.06); }
+
+    /* Light theme only */
+    :root {
+      --bg:#f8fafc;           /* page background */
+      --surface:#ffffff;      /* cards */
+      --text:#0f172a;         /* main text */
+      --muted:#475569;        /* secondary text */
+      --panel:rgba(2,6,23,0.02);
+      --ring:rgba(2,6,23,0.06);
+    }
+    body { color: var(--text); background: linear-gradient(to bottom, #eef2ff, #ffffff); }
+
+    /* Modal helpers */
+    .modal { display:none; }
+    .modal.show { display:flex; }
   </style>
 </head>
 <body class="min-h-screen text-slate-800">
-  <!-- HEADER / NAV -->
+  <!-- HEADER -->
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between gap-3 flex-wrap">
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">🗺️ NewsPlay <span class="text-indigo-600">Starter</span></h1>
-      <nav class="flex items-center gap-2">
-        <a href="quiz.html" class="pop px-3 py-2 rounded-xl bg-indigo-100">🧠 Big Quiz</a>
-        <a href="lab-sd.html" class="pop px-3 py-2 rounded-xl bg-emerald-100">⚖️ Supply & Demand Lab</a>
-        <a href="lab-budget.html" class="pop px-3 py-2 rounded-xl bg-amber-100">💰 Budget Builder</a>
-        <a href="create-comic.html" class="pop px-3 py-2 rounded-xl bg-pink-100">🎨 Comic Studio</a>
-        <a href="learn-deck.html" class="pop px-3 py-2 rounded-xl bg-violet-100">📚 Learn Deck</a>
-        <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-slate-200">📚 Glossary</button>
-        <div class="hidden md:flex items-center gap-2 text-sm"><span class="text-slate-600">Stickers:</span><div id="badge-shelf" class="flex gap-1"></div></div>
-      </nav>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+        🗺️ NewsPlay <span class="text-indigo-600">Starter</span>
+      </h1>
+
+      <!-- Right-side nav -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- NEW: Mystery Missions button -->
+        <a href="mystery.html" class="pop px-3 py-2 rounded-xl bg-rose-100">🕵️ Mystery Missions</a>
+
+        <!-- Glossary button -->
+        <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-indigo-100">📚 Glossary</button>
+
+        <!-- Stickers shelf -->
+        <div class="hidden md:flex items-center gap-2 text-sm">
+          <span class="text-slate-600">Stickers:</span>
+          <div id="badge-shelf" class="flex gap-1"></div>
+        </div>
+      </div>
     </div>
-    <p class="mt-2 text-slate-600">Kid‑friendly explanations of economics & current events. Choose an age, tap a card, learn by mini‑comics 🎉</p>
+    <p class="mt-2 text-slate-600">
+      Kid-friendly explanations of economics & current events. Choose an age, tap a card, learn by mini-comics 🎉
+    </p>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 pb-24">
@@ -38,17 +64,16 @@
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <h2 class="font-bold">Age switcher</h2>
         <div class="flex gap-2" role="tablist" aria-label="Age tiers">
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
+          <button id="age-6-8" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button id="age-9-11" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button id="age-12-14" class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
         </div>
       </div>
       <p class="mt-2 text-sm text-slate-600">Tip: This instantly changes wording and examples everywhere.</p>
     </section>
 
-    <!-- STORY CARDS / MINI‑COMICS (first four need to be populated) -->
+    <!-- STORY CARD / MINI-COMIC -->
     <section class="mt-6 grid md:grid-cols-2 gap-6">
-      <!-- 1) PRICES / INFLATION (built‑in quiz) -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -59,13 +84,17 @@
             <button id="btn-tts" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
           </div>
         </div>
+
+        <!-- 3-panel mini-comic -->
         <div class="mt-4 grid grid-cols-3 gap-3" id="comic">
           <div class="comic-panel rounded-xl bg-orange-50 p-3" id="panel-1"></div>
           <div class="comic-panel rounded-xl bg-yellow-50 p-3" id="panel-2"></div>
           <div class="comic-panel rounded-xl bg-lime-50 p-3" id="panel-3"></div>
         </div>
+
+        <!-- Explain-Back -->
         <div class="mt-5 p-3 rounded-xl bg-slate-50">
-          <h4 class="font-semibold">Explain‑Back 🎤</h4>
+          <h4 class="font-semibold">Explain-Back 🎤</h4>
           <p class="text-sm text-slate-600">In 15 seconds, try to explain the story in your own words! (Use the mic or type.)</p>
           <div class="mt-2 flex flex-wrap gap-2 items-center">
             <button id="btn-record" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">🎙️ Start/Stop</button>
@@ -75,6 +104,8 @@
           <button id="btn-score" class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">✨ Get kind feedback</button>
           <p id="score-output" class="mt-2 text-sm"></p>
         </div>
+
+        <!-- Quick Quiz -->
         <div class="mt-5 p-3 rounded-2xl bg-slate-50" id="quiz">
           <h4 class="font-semibold">Quick Quiz 🧠</h4>
           <p class="text-sm text-slate-600">Choose the best answers.</p>
@@ -100,10 +131,10 @@
         </div>
       </article>
 
-      <!-- 2) TIME‑TRAVEL DATA -->
+      <!-- TIME-TRAVEL DATA -->
       <aside class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="text-xl font-bold">Time‑Travel Data ⏳</h3>
+          <h3 class="text-xl font-bold">Time-Travel Data ⏳</h3>
           <div class="flex gap-2 items-center">
             <label for="country" class="text-sm">Country</label>
             <select id="country" class="border rounded-lg p-2">
@@ -135,7 +166,7 @@
         </div>
       </aside>
 
-      <!-- 3) TRADE -->
+      <!-- SECOND STORY CARD -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -153,7 +184,7 @@
         </div>
       </article>
 
-      <!-- 4) BANKS -->
+      <!-- THIRD STORY CARD -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -171,7 +202,7 @@
         </div>
       </article>
 
-      <!-- 5) TAXES -->
+      <!-- FOURTH STORY CARD -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -189,7 +220,7 @@
         </div>
       </article>
 
-      <!-- 6) GDP -->
+      <!-- FIFTH STORY CARD -->
       <article class="p-5 bg-white rounded-2xl shadow">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -206,7 +237,6 @@
           <div class="comic-panel rounded-xl bg-green-50 p-3" id="panel5-3"></div>
         </div>
       </article>
-      <!-- Extra topic cards + fallback quizzes are injected by extras.js below -->
     </section>
 
     <!-- GLOSSARY MODAL -->
@@ -226,118 +256,8 @@
     </footer>
   </main>
 
-  <!-- Primary scripts (absolute paths for GitHub Pages) -->
-  <script src="/newsplay/app.js?v=6" defer></script>
-  <script src="/newsplay/extras.js?v=6" defer></script>
-
-  <!-- Self‑healing loader for first four cards: if app.js didn’t run, try to recover without breaking anything else. -->
-  <script>
-  (function(){
-    function tier(){
-      const btn=document.querySelector('.age-btn.text-white');
-      return (btn&&btn.dataset&&btn.dataset.tier)||'6_8';
-    }
-    const LINES={
-      '6_8':['Bananas are super popular today!','Only a few boxes arrived.','When lots want it but there is little, prices go up.'],
-      '9_11':['High demand for bananas today.','Supply trucks were delayed.','When demand↑ and supply↓, price tends to rise.'],
-      '12_14':['Demand spike meets supply constraint.','Logistics reduce deliveries.','Price rises as the market finds a new equilibrium.']
-    };
-    function rescuePanels(){
-      if(window.NP_READY) return; // app.js already took over
-      const a=LINES[tier()]||LINES['6_8'];
-      ['panel-1','panel-2','panel-3'].forEach((id,i)=>{ const el=document.getElementById(id); if(el && !el.textContent.trim()) el.textContent=a[i]; });
-    }
-    function tryFallbackLoad(){
-      if(window.NP_READY) return;
-      // attempt an absolute‑path reload for app.js once
-      var s=document.createElement('script'); s.src='/newsplay/app.js?v=fallback'; s.defer=true; s.onload=function(){ console.log('app.js fallback loaded'); };
-      document.body.appendChild(s);
-    }
-    window.addEventListener('DOMContentLoaded', function(){
-      setTimeout(function(){ if(!window.NP_READY) tryFallbackLoad(); }, 350);
-      setTimeout(rescuePanels, 800);
-    });
-  })();
-  </script>
-<script>
-(function(){
-  // Detect current age tier from the highlighted button
-  function tier(){
-    const btn = document.querySelector('.age-btn.text-white');
-    return (btn && btn.dataset && btn.dataset.tier) || '6_8';
-  }
-
-  // Tiered lines for the FOUR core cards
-  const PACK = {
-    trade: {
-      '6_8': ['We make toys; they grow rice. We swap!', 'Trading helps everyone get what they need.', 'Both sides can be happier after trade.'],
-      '9_11': ['Countries specialize in what they do best.', 'Export what’s easy; import what’s costly.', 'Comparative advantage makes trade win–win.'],
-      '12_14': ['Gains come from lower opportunity cost.', 'Terms of trade affect each side’s gains.', 'Tariffs/standards shape flows & adjustment.']
-    },
-    banks: {
-      '6_8': ['Banks keep money safe.', 'They lend money for big things.', 'Borrowers repay with extra called interest.'],
-      '9_11': ['Banks use deposits to make loans & keep reserves.', 'Borrowers pay interest; savers may earn interest.', 'Rules help banks stay safe.'],
-      '12_14': ['Banks intermediate savers ↔ borrowers.', 'They earn a spread: loan − deposit rate.', 'Capital/liquidity rules control risk.']
-    },
-    taxes: {
-      '6_8': ['We all chip in a little money.', 'It pays for roads, schools, parks.', 'That shared money is taxes.'],
-      '9_11': ['Income tax (earnings), GST/VAT (purchases).', 'Progressive = higher incomes → higher rates.', 'Taxes fund public services we use.'],
-      '12_14': ['Direct vs indirect; incidence = who bears it.', 'Elasticities change price/quantity effects.', 'Externality taxes (e.g., carbon) reduce harm.']
-    },
-    gdp: {
-      '6_8': ['GDP adds up what a country makes this year.', 'Services count too (doctors, teachers).', 'More GDP means more made, not always happier.'],
-      '9_11': ['GDP = value of goods & services made this year.', 'Real GDP removes price changes.', 'Per-person GDP helps compare countries.'],
-      '12_14': ['Expenditure: C + I + G + NX.', 'Real vs nominal; base-year matters.', 'Limits: distribution, unpaid work, environment.']
-    }
-  };
-
-  const IDS = {
-    trade: ['panel2-1','panel2-2','panel2-3'],
-    banks: ['panel3-1','panel3-2','panel3-3'],
-    taxes: ['panel4-1','panel4-2','panel4-3'],
-    gdp:   ['panel5-1','panel5-2','panel5-3']
-  };
-
-  function isBlank(el){ return !el || !el.textContent || !el.textContent.trim(); }
-  function fill(topic, lines){
-    const ids = IDS[topic], els = ids.map(id => document.getElementById(id));
-    if (!els[0]) return;                           // not on this page
-    const blank = els.every(isBlank);
-    // Only fill if blank, or if previously marked as rescued
-    if (!blank && els[0].dataset.rescued !== '1') return;
-    els.forEach((el,i)=>{ if(el){ el.textContent = lines[i]; el.dataset.rescued='1'; } });
-  }
-
-  function paintAll(){
-    const t = tier();
-    fill('trade', PACK.trade[t]);
-    fill('banks', PACK.banks[t]);
-    fill('taxes', PACK.taxes[t]);
-    fill('gdp',   PACK.gdp[t]);
-  }
-
-  // Run once after DOM
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintAll);
-  else paintAll();
-
-  // Repaint rescued panels on tier change
-  document.addEventListener('click', (e)=>{
-    const btn = e.target.closest && e.target.closest('.age-btn');
-    if (!btn) return;
-    ['trade','banks','taxes','gdp'].forEach(topic=>{
-      const first = document.getElementById(IDS[topic][0]);
-      if (first && first.dataset.rescued === '1') {
-        const lines = PACK[topic][btn.dataset.tier];
-        IDS[topic].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent = lines[i]; });
-      }
-    });
-  });
-
-  // Give the chart a gentle nudge if it didn't render yet
-  window.addEventListener('load', ()=> {
-    setTimeout(()=> document.getElementById('btn-load-country')?.click(), 600);
-  });
-})();
-</script>
+  <!-- Scripts -->
+  <script src="app.js?v=10" defer></script>
+  <script src="extras.js?v=10" defer></script>
 </body>
 </html>
