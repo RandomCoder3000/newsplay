@@ -39,9 +39,22 @@
       </h1>
 
       <!-- Right-side nav -->
-      <div class="flex items-center gap-2 flex-wrap">
-        <!-- NEW: Mystery Missions button -->
-        <a href="mystery.html" class="pop px-3 py-2 rounded-xl bg-rose-100">🕵️ Mystery Missions</a>
+      <div class="flex items-center gap-2 flex-wrap" id="nav-strip">
+        <!-- Always present -->
+        <a href="mystery.html" class="nav-pill pop px-3 py-2 rounded-xl bg-rose-100">🕵️ Mystery Missions</a>
+
+        <!-- Discoverable links (auto-hide if page missing) -->
+        <a data-candidates="budget.html,budget-builder.html,builder.html"
+           class="nav-pill pop px-3 py-2 rounded-xl bg-amber-100 hidden">💰 Budget Builder</a>
+
+        <a data-candidates="big-quiz.html,quiz.html,quizzes.html"
+           class="nav-pill pop px-3 py-2 rounded-xl bg-fuchsia-100 hidden">🧠 Big Quiz</a>
+
+        <a data-candidates="comic-studio.html,comic.html,studio.html"
+           class="nav-pill pop px-3 py-2 rounded-xl bg-violet-100 hidden">🎨 Comic Studio</a>
+
+        <a data-candidates="sd-lab.html,lab.html,sandbox.html"
+           class="nav-pill pop px-3 py-2 rounded-xl bg-sky-100 hidden">🧪 SD Lab</a>
 
         <!-- Glossary button -->
         <button id="open-glossary" class="pop px-3 py-2 rounded-xl bg-indigo-100">📚 Glossary</button>
@@ -257,7 +270,23 @@
   </main>
 
   <!-- Scripts -->
-  <script src="app.js?v=10" defer></script>
-  <script src="extras.js?v=10" defer></script>
+  <script src="app.js?v=11" defer></script>
+  <script src="extras.js?v=11" defer></script>
+
+  <!-- AUTO-NAV DISCOVERY: show buttons only if the page exists -->
+  <script>
+  (async function(){
+    const pills = document.querySelectorAll('a.nav-pill[data-candidates]');
+    for (const a of pills) {
+      const candidates = (a.dataset.candidates || '').split(',').map(s=>s.trim()).filter(Boolean);
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+          if (res.ok) { a.href = url; a.classList.remove('hidden'); break; }
+        } catch(e) { /* ignore */ }
+      }
+    }
+  })();
+  </script>
 </body>
 </html>
