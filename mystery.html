@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>NewsPlay — Mystery Missions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .pop{transition:transform .12s ease}.pop:active{transform:scale(.98)}
+    .dropee { min-height: 90px; }
+    .card { user-select:none }
+    .hidden-step { display:none }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-rose-50 to-white text-slate-800">
+  <header class="max-w-5xl mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">🕵️ NewsPlay <span class="text-rose-600">Mystery Missions</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm">
+          <span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div>
+        </div>
+        <div class="flex gap-2" role="tablist" aria-label="Age tiers">
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-100" data-tier="12_14">12–14</button>
+        </div>
+      </div>
+    </div>
+    <p class="mt-2 text-slate-600 text-sm">Collect clues, test causes, and write your final claim. Progress saves on this device.</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24">
+    <!-- Stepper -->
+    <section class="mt-6 p-3 bg-white rounded-2xl shadow">
+      <ol class="flex flex-wrap items-center gap-2 text-sm">
+        <li id="st1" class="px-2 py-1 rounded bg-rose-100">1) Case</li>
+        <li id="st2" class="px-2 py-1 rounded">2) Evidence</li>
+        <li id="st3" class="px-2 py-1 rounded">3) Mini-Sim</li>
+        <li id="st4" class="px-2 py-1 rounded">4) Claim</li>
+      </ol>
+    </section>
+
+    <!-- Step 1: Case brief -->
+    <section id="step1" class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 id="case-title" class="text-xl font-bold">—</h2>
+      <p id="case-brief" class="mt-2 text-slate-700">—</p>
+      <div class="mt-3">
+        <label class="text-sm">Choose a mission</label>
+        <select id="mission" class="border rounded-lg p-2">
+          <option value="bananas" selected>🍌 The Bananas Price Puzzle</option>
+          <option value="fuel">⛽ The Fuel Spike</option>
+          <option value="trade">🚢 The Trade Swap</option>
+          <option value="notebooks">📓 The Notebook Price Drop</option>
+        </select>
+      </div>
+      <button id="to-evidence" class="mt-4 pop px-3 py-2 rounded-xl bg-rose-600 text-white">Start →</button>
+    </section>
+
+    <!-- Step 2: Evidence -->
+    <section id="step2" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="text-xl font-bold">Collect evidence (pick any 3)</h2>
+      <p class="text-sm text-slate-600">Drag cards into the tray.</p>
+      <div id="cards" class="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+      <div class="mt-4 p-3 rounded-xl bg-rose-50">
+        <div class="text-sm text-slate-600">Evidence tray (3):</div>
+        <div id="tray" class="dropee mt-2 grid grid-cols-3 gap-2"></div>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button id="back1" class="pop px-3 py-2 rounded-xl bg-slate-200">← Back</button>
+        <button id="to-sim" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white" disabled>Next →</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Mini-Simulator -->
+    <section id="step3" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="text-xl font-bold">Test a cause → See the effect</h2>
+      <p class="text-sm text-slate-600">Move sliders and toggles; watch the price meter.</p>
+      <div class="mt-4 grid md:grid-cols-2 gap-4">
+        <div class="p-3 rounded-xl bg-rose-50">
+          <label class="text-sm">Supply</label>
+          <input id="supply" type="range" min="50" max="150" value="100" class="w-full">
+          <label class="text-sm">Demand</label>
+          <input id="demand" type="range" min="50" max="150" value="100" class="w-full">
+          <div class="mt-2 flex gap-2 text-sm">
+            <label><input id="tariff" type="checkbox"> Tariff +10%</label>
+            <label><input id="subsidy" type="checkbox"> Subsidy −10%</label>
+          </div>
+        </div>
+        <div class="p-3 rounded-xl bg-white border">
+          <div class="text-sm text-slate-600">Price meter</div>
+          <div class="mt-2 h-10 w-full bg-slate-100 rounded">
+            <div id="meter" class="h-10 bg-rose-400 rounded" style="width:50%"></div>
+          </div>
+          <div class="mt-2 text-sm">Estimated price: <b id="price">—</b></div>
+
+          <!-- Trade-only overlay -->
+          <div id="trade-map" class="mt-4 p-3 rounded-xl bg-rose-50 hidden">
+            <div class="text-sm text-slate-600">Trade route (Trade mission)</div>
+            <div class="mt-2 flex gap-2 items-center">
+              <select id="countryA" class="border rounded-lg p-1"></select>
+              <span>↔</span>
+              <select id="countryB" class="border rounded-lg p-1"></select>
+            </div>
+            <svg id="mapsvg" viewBox="0 0 800 400" class="mt-2 w-full h-48 bg-white rounded border"></svg>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button id="back2" class="pop px-3 py-2 rounded-xl bg-slate-200">← Back</button>
+        <button id="to-claim" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">Next →</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Claim builder -->
+    <section id="step4" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="text-xl font-bold">Build your claim</h2>
+      <p class="text-sm text-slate-600">Use your evidence and sim result.</p>
+      <div class="mt-3 grid md:grid-cols-2 gap-3">
+        <div class="p-3 rounded-xl bg-rose-50">
+          <div class="text-sm text-slate-600">Your evidence</div>
+          <ul id="chosen" class="mt-2 list-disc pl-5 text-sm"></ul>
+        </div>
+        <div class="p-3 rounded-xl bg-white border">
+          <div class="text-sm text-slate-600">Claim template</div>
+          <textarea id="claim" class="mt-2 w-full h-28 p-2 rounded-lg border text-sm"></textarea>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button id="btn-check" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">✔️ Check my claim</button>
+            <button id="btn-copy" class="pop px-3 py-2 rounded-xl bg-slate-200">Copy</button>
+            <button id="btn-export" class="pop px-3 py-2 rounded-xl bg-emerald-100">📝 Export notes</button>
+          </div>
+          <div id="score-out" class="mt-2 text-sm"></div>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button id="restart" class="pop px-3 py-2 rounded-xl bg-slate-200">Start another mission</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/newsplay/mystery.js?v=2" defer></script>
+</body>
+</html>
