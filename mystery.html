@@ -2,145 +2,259 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>NewsPlay — Mystery Missions</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .pop{transition:transform .12s ease}.pop:active{transform:scale(.98)}
-    .dropee { min-height: 90px; }
-    .card { user-select:none }
-    .hidden-step { display:none }
+    .pop{transition:transform 120ms ease}.pop:active{transform:scale(.98)}
+    .hint{display:none}.hint.show{display:block}
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-rose-50 to-white text-slate-800">
   <header class="max-w-5xl mx-auto px-4 pt-6">
     <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="text-sm px-3 py-2 rounded-xl bg-slate-200">← Home</a>
-        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">🕵️ NewsPlay <span class="text-rose-600">Mystery Missions</span></h1>
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="pop px-3 py-2 rounded-xl bg-slate-200">← Home</a>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">🕵️ Mystery Missions</h1>
       </div>
       <div class="flex items-center gap-4">
         <div class="hidden md:flex items-center gap-2 text-sm">
-          <span class="text-slate-600">Badges:</span><div id="badge-shelf" class="flex gap-1"></div>
+          <span class="text-slate-600">Badges:</span>
+          <div id="badge-shelf" class="flex gap-1"></div>
         </div>
         <div class="flex gap-2" role="tablist" aria-label="Age tiers">
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-600 text-white" data-tier="6_8">6–8</button>
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-100" data-tier="9_11">9–11</button>
-          <button class="age-btn pop px-3 py-2 rounded-xl bg-rose-100" data-tier="12_14">12–14</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white" data-tier="6_8">6–8</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="9_11">9–11</button>
+          <button class="age-btn pop px-3 py-2 rounded-xl bg-indigo-100" data-tier="12_14">12–14</button>
         </div>
       </div>
     </div>
-    <p class="mt-2 text-slate-600 text-sm">Collect clues, test causes, and write your final claim. Progress saves on this device.</p>
+    <p class="mt-2 text-slate-600 text-sm">Pick a mission, collect evidence, try a tiny simulation, and write your claim. Earn badges as you go!</p>
   </header>
 
   <main class="max-w-5xl mx-auto px-4 pb-24">
-    <!-- Stepper -->
-    <section class="mt-6 p-3 bg-white rounded-2xl shadow">
-      <ol class="flex flex-wrap items-center gap-2 text-sm">
-        <li id="st1" class="px-2 py-1 rounded bg-rose-100">1) Case</li>
-        <li id="st2" class="px-2 py-1 rounded">2) Evidence</li>
-        <li id="st3" class="px-2 py-1 rounded">3) Mini-Sim</li>
-        <li id="st4" class="px-2 py-1 rounded">4) Claim</li>
-      </ol>
+    <!-- Mission chooser -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <h2 class="font-bold">Choose a mission</h2>
+      <div id="missions" class="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
     </section>
 
-    <!-- Step 1: Case brief -->
-    <section id="step1" class="mt-6 p-4 bg-white rounded-2xl shadow">
-      <h2 id="case-title" class="text-xl font-bold">—</h2>
-      <p id="case-brief" class="mt-2 text-slate-700">—</p>
-      <div class="mt-3">
-        <label class="text-sm">Choose a mission</label>
-        <select id="mission" class="border rounded-lg p-2">
-          <option value="bananas" selected>🍌 The Bananas Price Puzzle</option>
-          <option value="fuel">⛽ The Fuel Spike</option>
-          <option value="trade">🚢 The Trade Swap</option>
-          <option value="notebooks">📓 The Notebook Price Drop</option>
-        </select>
+    <!-- Evidence board + mini-sim + claim builder -->
+    <section class="mt-6 p-4 bg-white rounded-2xl shadow">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 id="m-title" class="text-xl font-bold">—</h3>
+          <p id="m-sub" class="text-sm text-slate-600">—</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-reset" class="pop px-3 py-2 rounded-xl bg-slate-200">Reset mission</button>
+        </div>
       </div>
-      <button id="to-evidence" class="mt-4 pop px-3 py-2 rounded-xl bg-rose-600 text-white">Start →</button>
-    </section>
 
-    <!-- Step 2: Evidence -->
-    <section id="step2" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
-      <h2 class="text-xl font-bold">Collect evidence (pick any 3)</h2>
-      <p class="text-sm text-slate-600">Drag cards into the tray.</p>
-      <div id="cards" class="mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
-      <div class="mt-4 p-3 rounded-xl bg-rose-50">
-        <div class="text-sm text-slate-600">Evidence tray (3):</div>
-        <div id="tray" class="dropee mt-2 grid grid-cols-3 gap-2"></div>
-      </div>
-      <div class="mt-3 flex gap-2">
-        <button id="back1" class="pop px-3 py-2 rounded-xl bg-slate-200">← Back</button>
-        <button id="to-sim" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white" disabled>Next →</button>
-      </div>
-    </section>
-
-    <!-- Step 3: Mini-Simulator -->
-    <section id="step3" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
-      <h2 class="text-xl font-bold">Test a cause → See the effect</h2>
-      <p class="text-sm text-slate-600">Move sliders and toggles; watch the price meter.</p>
+      <!-- Evidence -->
       <div class="mt-4 grid md:grid-cols-2 gap-4">
-        <div class="p-3 rounded-xl bg-rose-50">
-          <label class="text-sm">Supply</label>
-          <input id="supply" type="range" min="50" max="150" value="100" class="w-full">
-          <label class="text-sm">Demand</label>
-          <input id="demand" type="range" min="50" max="150" value="100" class="w-full">
-          <div class="mt-2 flex gap-2 text-sm">
-            <label><input id="tariff" type="checkbox"> Tariff +10%</label>
-            <label><input id="subsidy" type="checkbox"> Subsidy −10%</label>
-          </div>
+        <div class="p-3 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50">
+          <h4 class="font-semibold">Evidence Board</h4>
+          <div id="evidence" class="mt-2 space-y-2"></div>
+          <p class="text-xs text-slate-500 mt-2">Tip: Collect at least 3 items to earn the 🧩 Evidence Collector badge.</p>
         </div>
-        <div class="p-3 rounded-xl bg-white border">
-          <div class="text-sm text-slate-600">Price meter</div>
-          <div class="mt-2 h-10 w-full bg-slate-100 rounded">
-            <div id="meter" class="h-10 bg-rose-400 rounded" style="width:50%"></div>
-          </div>
-          <div class="mt-2 text-sm">Estimated price: <b id="price">—</b></div>
 
-          <!-- Trade-only overlay -->
-          <div id="trade-map" class="mt-4 p-3 rounded-xl bg-rose-50 hidden">
-            <div class="text-sm text-slate-600">Trade route (Trade mission)</div>
-            <div class="mt-2 flex gap-2 items-center">
-              <select id="countryA" class="border rounded-lg p-1"></select>
-              <span>↔</span>
-              <select id="countryB" class="border rounded-lg p-1"></select>
-            </div>
-            <svg id="mapsvg" viewBox="0 0 800 400" class="mt-2 w-full h-48 bg-white rounded border"></svg>
+        <!-- Mini-sim -->
+        <div class="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50">
+          <h4 class="font-semibold">Tiny Simulation</h4>
+          <div class="text-sm text-slate-700">Move the sliders to test a what-if scenario.</div>
+          <div class="mt-3">
+            <label class="text-sm">Demand change (%)</label>
+            <input id="sim-demand" type="range" min="-50" max="50" value="10" class="w-full">
+            <div class="text-xs"><span id="sim-demand-val">+10%</span></div>
+          </div>
+          <div class="mt-3">
+            <label class="text-sm">Supply change (%)</label>
+            <input id="sim-supply" type="range" min="-50" max="50" value="-10" class="w-full">
+            <div class="text-xs"><span id="sim-supply-val">-10%</span></div>
+          </div>
+          <div class="mt-3 p-3 rounded-xl bg-white shadow text-sm">
+            <div>Predicted price direction: <b id="sim-price">up</b></div>
+            <div>Predicted quantity direction: <b id="sim-qty">uncertain</b></div>
+            <div class="mt-1 text-xs text-slate-500">Heuristic: demand↑ → prices↑; supply↑ → prices↓. Mix them to see the direction.</div>
           </div>
         </div>
       </div>
-      <div class="mt-3 flex gap-2">
-        <button id="back2" class="pop px-3 py-2 rounded-xl bg-slate-200">← Back</button>
-        <button id="to-claim" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">Next →</button>
-      </div>
-    </section>
 
-    <!-- Step 4: Claim builder -->
-    <section id="step4" class="hidden-step mt-6 p-4 bg-white rounded-2xl shadow">
-      <h2 class="text-xl font-bold">Build your claim</h2>
-      <p class="text-sm text-slate-600">Use your evidence and sim result.</p>
-      <div class="mt-3 grid md:grid-cols-2 gap-3">
-        <div class="p-3 rounded-xl bg-rose-50">
-          <div class="text-sm text-slate-600">Your evidence</div>
-          <ul id="chosen" class="mt-2 list-disc pl-5 text-sm"></ul>
+      <!-- Claim builder -->
+      <div class="mt-4 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50">
+        <h4 class="font-semibold">Claim Builder</h4>
+        <p class="text-sm text-slate-700">Write one paragraph explaining your claim using at least two evidence items and the sim result.</p>
+        <textarea id="claim" class="mt-2 w-full h-28 p-2 rounded-lg border" placeholder="Example: Prices rose because demand increased while supply fell. Evidence: …"></textarea>
+        <div class="mt-2 flex gap-2">
+          <button id="btn-score" class="pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Score my claim</button>
+          <button id="btn-export" class="pop px-3 py-2 rounded-xl bg-emerald-100">Export</button>
         </div>
-        <div class="p-3 rounded-xl bg-white border">
-          <div class="text-sm text-slate-600">Claim template</div>
-          <textarea id="claim" class="mt-2 w-full h-28 p-2 rounded-lg border text-sm"></textarea>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button id="btn-check" class="pop px-3 py-2 rounded-xl bg-rose-600 text-white">✔️ Check my claim</button>
-            <button id="btn-copy" class="pop px-3 py-2 rounded-xl bg-slate-200">Copy</button>
-            <button id="btn-export" class="pop px-3 py-2 rounded-xl bg-emerald-100">📝 Export notes</button>
-          </div>
-          <div id="score-out" class="mt-2 text-sm"></div>
-        </div>
-      </div>
-      <div class="mt-3">
-        <button id="restart" class="pop px-3 py-2 rounded-xl bg-slate-200">Start another mission</button>
+        <div id="score" class="mt-2 text-sm"></div>
+        <div id="hints" class="hint mt-2 text-xs text-slate-600"></div>
       </div>
     </section>
   </main>
 
-  <script src="/newsplay/mystery.js?v=2" defer></script>
+  <script>
+  /******** 0) Storage & badges ********/
+  const PREFS_KEY='np_prefs_v1';
+  const MYST_KEY='np_mystery_v1';
+  const BADGES_KEY='np_badges_v1';
+  function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{}}catch{return{}} }
+  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+  function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
+  function addBadge(name,emoji){ const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); }}
+  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+
+  /******** 1) Tiering ********/
+  let currentTier=(function(){ const p=getPrefs(); return p.tier||'6_8'; })();
+  function paintTier(){
+    document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+    const active=document.querySelector(\`.age-btn[data-tier="\${currentTier}"]\`);
+    if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+  }
+  document.querySelectorAll('.age-btn').forEach(btn=> btn.addEventListener('click',()=>{ currentTier=btn.dataset.tier; const p=getPrefs(); p.tier=currentTier; setPrefs(p); paintTier(); renderMission(); }));
+
+  /******** 2) Missions ********/
+  const MISSIONS=[
+    {
+      id:'fruit-prices',
+      title:'Are fruit prices rising this month?',
+      sub:'Use supply & demand clues to explain changes.',
+      ev:{
+        '6_8':['Fewer fruit trucks arrived','More people wanted fruit','Bad weather hurt crops','Shop had a sale','Festival weekend crowd'],
+        '9_11':['Lower supply from farms','Higher local demand','Fuel price increased','Importer added fees','Fruit quality improved'],
+        '12_14':['Supply shock from weather','Demand spike (festival)','Higher transport costs','Tariff on imports','Retailer promotion']
+      }
+    },
+    {
+      id:'bus-fares',
+      title:'Why did bus fares change?',
+      sub:'Explore fuel costs, ridership, and city policy.',
+      ev:{
+        '6_8':['Fuel got expensive','More people used buses','City helped with money','New buses arrived','Holiday travel rush'],
+        '9_11':['Diesel price rose','Ridership increased','Subsidy added/removed','Maintenance costs rose','Competition from taxis'],
+        '12_14':['Fuel-cost pass-through','Fare elasticity & ridership','Budget subsidy change','Capex/opex pressure','Modal shift effects']
+      }
+    },
+    {
+      id:'canteen-meals',
+      title:'Why did canteen meal prices change?',
+      sub:'Track ingredients cost and demand at school.',
+      ev:{
+        '6_8':['Veggies cost more','More students eating','Chef made bigger portions','Discount day started','Supplier changed'],
+        '9_11':['Input costs rose','Demand increased','Menu upgrade','Bulk discount ended','Supplier switch'],
+        '12_14':['Input cost index ↑','Demand trend ↑','Quality upgrade costs','Volume discounts ended','Vendor renegotiation']
+      }
+    }
+  ];
+
+  /******** 3) UI mount ********/
+  let current='fruit-prices';
+  function mountMissions(){
+    const box=document.getElementById('missions'); box.innerHTML='';
+    MISSIONS.forEach(m=>{
+      const a=document.createElement('a');
+      a.href='#'; a.className='pop p-4 rounded-2xl bg-white border hover:shadow block';
+      a.innerHTML=\`<div class="text-2xl">🧩</div><div class="font-semibold">\${m.title}</div><div class="text-sm text-slate-600">\${m.sub}</div>\`;
+      a.addEventListener('click',(e)=>{ e.preventDefault(); current=m.id; renderMission(); addBadge('Case Picker','🧩'); });
+      box.appendChild(a);
+    });
+  }
+
+  function renderMission(){
+    const m=MISSIONS.find(x=>x.id===current);
+    if(!m) return;
+    document.getElementById('m-title').textContent=m.title;
+    document.getElementById('m-sub').textContent=m.sub;
+
+    // Evidence list
+    const list=m.ev[currentTier]||m.ev['6_8'];
+    const evBox=document.getElementById('evidence');
+    evBox.innerHTML='';
+    list.forEach((t,i)=>{
+      const id=\`ev-\${m.id}-\${i}\`;
+      const r=document.createElement('div');
+      r.innerHTML=\`<label class="text-sm flex gap-2 items-start"><input type="checkbox" id="\${id}"/> <span>\${t}</span></label>\`;
+      evBox.appendChild(r);
+      const saved=getSaved(); if(saved?.ev?.[m.id]?.includes(i)) r.querySelector('input').checked=true;
+      r.querySelector('input').addEventListener('change',()=>{
+        const s=getSaved(); s.ev=s.ev||{}; const arr=new Set(s.ev[m.id]||[]);
+        if(r.querySelector('input').checked){ arr.add(i); } else { arr.delete(i); }
+        s.ev[m.id]=[...arr]; setSaved(s);
+        if((s.ev[m.id]||[]).length>=3) addBadge('Evidence Collector','🧩');
+      });
+    });
+
+    // Restore claim
+    const s=getSaved(); const c=(s.claims||{})[m.id]||'';
+    document.getElementById('claim').value=c;
+
+    // Update sim outputs
+    onSimChange();
+  }
+
+  /******** 4) Sim logic ********/
+  const dEl=document.getElementById('sim-demand');
+  const sEl=document.getElementById('sim-supply');
+  function onSimChange(){
+    const d=+dEl.value, s=+sEl.value;
+    document.getElementById('sim-demand-val').textContent=(d>0?'+':'')+d+'%';
+    document.getElementById('sim-supply-val').textContent=(s>0?'+':'')+s+'%';
+    const net=d - s; // demand up pushes price up; supply up pushes price down
+    document.getElementById('sim-price').textContent = net>5 ? 'up' : net<-5 ? 'down' : 'about the same';
+    const qty = d + s; // both up → quantity up; both down → quantity down
+    document.getElementById('sim-qty').textContent = qty>5 ? 'up' : qty<-5 ? 'down' : 'about the same';
+  }
+  dEl.addEventListener('input', onSimChange);
+  sEl.addEventListener('input', onSimChange);
+
+  /******** 5) Claim scoring ********/
+  document.getElementById('btn-score').addEventListener('click',()=>{
+    const txt=document.getElementById('claim').value.trim();
+    const out=document.getElementById('score'); const hints=document.getElementById('hints');
+    let score=0, tips=[];
+    if(txt.length>=60){ score+=1 } else tips.push('Write at least 2–3 sentences.');
+    if(/because|due to|since/i.test(txt)){ score+=1 } else tips.push('Use a connector like “because”.');
+    if(/evidence|data|proof|sim|slider|selected/i.test(txt)){ score+=1 } else tips.push('Refer to your evidence or the sim.');
+    out.textContent='Score: '+score+'/3';
+    hints.textContent=tips.join(' ');
+    hints.classList.toggle('show', tips.length>0);
+    if(score===3) addBadge('Claim Maker','✍️');
+    // Save
+    const m=MISSIONS.find(x=>x.id===current);
+    const s=getSaved(); s.claims=s.claims||{}; s.claims[m.id]=txt; setSaved(s);
+  });
+
+  document.getElementById('btn-export').addEventListener('click',()=>{
+    const m=MISSIONS.find(x=>x.id===current);
+    const s=getSaved(); const list=(s.ev?.[m.id]||[]).map(i=>(m.ev[currentTier]||m.ev['6_8'])[i]||'');
+    const claim=(s.claims||{})[m.id]||document.getElementById('claim').value||'';
+    const text = [
+      'NewsPlay — Mystery Missions',
+      'Mission: '+m.title,
+      'Tier: '+currentTier,
+      'Evidence: '+(list.join('; ')||'none'),
+      'Claim:',
+      claim
+    ].join('\n');
+    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='newsplay-mystery.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click',()=>{
+    if(!confirm('Reset this mission?')) return;
+    const s=getSaved(); delete (s.ev||{})[current]; delete (s.claims||{})[current]; setSaved(s); renderMission();
+  });
+
+  /******** 6) Persistence ********/
+  function getSaved(){ try{return JSON.parse(localStorage.getItem(MYST_KEY))||{}}catch{return{}} }
+  function setSaved(obj){ localStorage.setItem(MYST_KEY, JSON.stringify(obj)); }
+
+  /******** 7) Init ********/
+  function init(){ renderBadges(); paintTier(); mountMissions(); renderMission(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+  </script>
 </body>
 </html>
