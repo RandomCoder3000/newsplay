@@ -97,28 +97,34 @@
   </main>
 
   <script>
-  /******** 0) Storage & badges ********/
-  const PREFS_KEY='np_prefs_v1';
-  const MYST_KEY='np_mystery_v1';
-  const BADGES_KEY='np_badges_v1';
-  function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{}}catch{return{}} }
-  function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
-  function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
-  function addBadge(name,emoji){ const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); }}
-  function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
+  document.addEventListener('DOMContentLoaded', function(){
+    // Storage & badges
+    const PREFS_KEY='np_prefs_v1', MYST_KEY='np_mystery_v1', BADGES_KEY='np_badges_v1';
+    function getPrefs(){ try{return JSON.parse(localStorage.getItem(PREFS_KEY))||{}}catch{return{}} }
+    function setPrefs(p){ localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+    function getBadges(){ try{return JSON.parse(localStorage.getItem(BADGES_KEY))||[]}catch{return[]} }
+    function addBadge(name,emoji){
+      const list=getBadges(); if(!list.find(b=>b.name===name)){ list.push({name,emoji,ts:Date.now()}); localStorage.setItem(BADGES_KEY, JSON.stringify(list)); renderBadges(); }
+    }
+    function renderBadges(){ const shelf=document.getElementById('badge-shelf'); if(!shelf) return; shelf.innerHTML=''; getBadges().forEach(b=>{ const s=document.createElement('span'); s.textContent=b.emoji; s.title=b.name; shelf.appendChild(s); }); }
 
-  /******** 1) Tiering ********/
-  let currentTier=(function(){ const p=getPrefs(); return p.tier||'6_8'; })();
-  function paintTier(){
-    document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
-    const active=document.querySelector(\`.age-btn[data-tier="\${currentTier}"]\`);
-    if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
-  }
-  document.querySelectorAll('.age-btn').forEach(btn=> btn.addEventListener('click',()=>{ currentTier=btn.dataset.tier; const p=getPrefs(); p.tier=currentTier; setPrefs(p); paintTier(); renderMission(); }));
+    // Tiering
+    let currentTier=(getPrefs().tier)||'6_8';
+    function paintTier(){
+      document.querySelectorAll('.age-btn').forEach(b=> b.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-100');
+      const active=document.querySelector('.age-btn[data-tier="'+currentTier+'"]');
+      if(active) active.className='age-btn pop px-3 py-2 rounded-xl bg-indigo-600 text-white';
+    }
+    document.querySelectorAll('.age-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        currentTier=btn.dataset.tier;
+        const p=getPrefs(); p.tier=currentTier; setPrefs(p);
+        paintTier(); renderMission();
+      });
+    });
 
-  /******** 2) Missions ********/
-  const MISSIONS=[
-    {
+    // Missions
+    const MISSIONS=[{
       id:'fruit-prices',
       title:'Are fruit prices rising this month?',
       sub:'Use supply & demand clues to explain changes.',
@@ -127,8 +133,7 @@
         '9_11':['Lower supply from farms','Higher local demand','Fuel price increased','Importer added fees','Fruit quality improved'],
         '12_14':['Supply shock from weather','Demand spike (festival)','Higher transport costs','Tariff on imports','Retailer promotion']
       }
-    },
-    {
+    },{
       id:'bus-fares',
       title:'Why did bus fares change?',
       sub:'Explore fuel costs, ridership, and city policy.',
@@ -137,8 +142,7 @@
         '9_11':['Diesel price rose','Ridership increased','Subsidy added/removed','Maintenance costs rose','Competition from taxis'],
         '12_14':['Fuel-cost pass-through','Fare elasticity & ridership','Budget subsidy change','Capex/opex pressure','Modal shift effects']
       }
-    },
-    {
+    },{
       id:'canteen-meals',
       title:'Why did canteen meal prices change?',
       sub:'Track ingredients cost and demand at school.',
@@ -147,114 +151,105 @@
         '9_11':['Input costs rose','Demand increased','Menu upgrade','Bulk discount ended','Supplier switch'],
         '12_14':['Input cost index ↑','Demand trend ↑','Quality upgrade costs','Volume discounts ended','Vendor renegotiation']
       }
-    }
-  ];
+    }];
 
-  /******** 3) UI mount ********/
-  let current='fruit-prices';
-  function mountMissions(){
-    const box=document.getElementById('missions'); box.innerHTML='';
-    MISSIONS.forEach(m=>{
-      const a=document.createElement('a');
-      a.href='#'; a.className='pop p-4 rounded-2xl bg-white border hover:shadow block';
-      a.innerHTML=\`<div class="text-2xl">🧩</div><div class="font-semibold">\${m.title}</div><div class="text-sm text-slate-600">\${m.sub}</div>\`;
-      a.addEventListener('click',(e)=>{ e.preventDefault(); current=m.id; renderMission(); addBadge('Case Picker','🧩'); });
-      box.appendChild(a);
-    });
-  }
+    // UI holders
+    const box=document.getElementById('missions');
+    const eBox=document.getElementById('evidence');
+    const dEl=document.getElementById('sim-demand'), sEl=document.getElementById('sim-supply');
+    const dVal=document.getElementById('sim-demand-val'), sVal=document.getElementById('sim-supply-val');
+    const priceOut=document.getElementById('sim-price'), qtyOut=document.getElementById('sim-qty');
+    const claimEl=document.getElementById('claim'), scoreEl=document.getElementById('score'), hintsEl=document.getElementById('hints');
+    let current = 'fruit-prices';
 
-  function renderMission(){
-    const m=MISSIONS.find(x=>x.id===current);
-    if(!m) return;
-    document.getElementById('m-title').textContent=m.title;
-    document.getElementById('m-sub').textContent=m.sub;
+    function getSaved(){ try{return JSON.parse(localStorage.getItem(MYST_KEY))||{}}catch{return{}} }
+    function setSaved(obj){ localStorage.setItem(MYST_KEY, JSON.stringify(obj)); }
 
-    // Evidence list
-    const list=m.ev[currentTier]||m.ev['6_8'];
-    const evBox=document.getElementById('evidence');
-    evBox.innerHTML='';
-    list.forEach((t,i)=>{
-      const id=\`ev-\${m.id}-\${i}\`;
-      const r=document.createElement('div');
-      r.innerHTML=\`<label class="text-sm flex gap-2 items-start"><input type="checkbox" id="\${id}"/> <span>\${t}</span></label>\`;
-      evBox.appendChild(r);
-      const saved=getSaved(); if(saved?.ev?.[m.id]?.includes(i)) r.querySelector('input').checked=true;
-      r.querySelector('input').addEventListener('change',()=>{
-        const s=getSaved(); s.ev=s.ev||{}; const arr=new Set(s.ev[m.id]||[]);
-        if(r.querySelector('input').checked){ arr.add(i); } else { arr.delete(i); }
-        s.ev[m.id]=[...arr]; setSaved(s);
-        if((s.ev[m.id]||[]).length>=3) addBadge('Evidence Collector','🧩');
+    function mountMissions(){
+      if(!box) return;
+      box.innerHTML='';
+      MISSIONS.forEach(m=>{
+        const a=document.createElement('a');
+        a.href='#'; a.className='pop p-4 rounded-2xl bg-white border hover:shadow block';
+        a.innerHTML='<div class="text-2xl">🧩</div><div class="font-semibold">'+m.title+'</div><div class="text-sm text-slate-600">'+m.sub+'</div>';
+        a.addEventListener('click',(e)=>{ e.preventDefault(); current=m.id; renderMission(); addBadge('Case Picker','🧩'); });
+        box.appendChild(a);
       });
+    }
+
+    function renderMission(){
+      const m=MISSIONS.find(x=>x.id===current); if(!m) return;
+      document.getElementById('m-title').textContent=m.title;
+      document.getElementById('m-sub').textContent=m.sub;
+
+      // Evidence
+      if(eBox) eBox.innerHTML='';
+      const list=m.ev[currentTier]||m.ev['6_8'];
+      list.forEach((t,i)=>{
+        const id='ev-'+m.id+'-'+i;
+        const r=document.createElement('div');
+        r.innerHTML='<label class="text-sm flex gap-2 items-start"><input type="checkbox" id="'+id+'"/> <span>'+t+'</span></label>';
+        eBox.appendChild(r);
+        const saved=getSaved(); if(saved?.ev?.[m.id]?.includes(i)) r.querySelector('input').checked=true;
+        r.querySelector('input').addEventListener('change',()=>{
+          const s=getSaved(); s.ev=s.ev||{}; const set=new Set(s.ev[m.id]||[]);
+          r.querySelector('input').checked ? set.add(i) : set.delete(i);
+          s.ev[m.id]=Array.from(set); setSaved(s);
+          if((s.ev[m.id]||[]).length>=3) addBadge('Evidence Collector','🧩');
+        });
+      });
+
+      // Restore claim
+      const s=getSaved(); const c=(s.claims||{})[m.id]||'';
+      claimEl.value=c;
+
+      onSimChange(); // sync sim outputs
+    }
+
+    function onSimChange(){
+      const d=+dEl.value, s=+sEl.value;
+      dVal.textContent=(d>0?'+':'')+d+'%';
+      sVal.textContent=(s>0?'+':'')+s+'%';
+      const net=d - s;  priceOut.textContent = net>5 ? 'up' : net<-5 ? 'down' : 'about the same';
+      const qty=d + s;  qtyOut.textContent   = qty>5 ? 'up' : qty<-5 ? 'down' : 'about the same';
+    }
+
+    dEl.addEventListener('input', onSimChange);
+    sEl.addEventListener('input', onSimChange);
+
+    document.getElementById('btn-score').addEventListener('click',()=>{
+      const m=MISSIONS.find(x=>x.id===current);
+      const saved=getSaved(); const evidences=(saved.ev?.[m.id]||[]).length;
+      const txt=claimEl.value.trim();
+      let score=0, tips=[];
+      if(txt.length>=60){ score+=1 } else tips.push('Write 2–3 sentences.');
+      if(/because|due to|since/i.test(txt)){ score+=1 } else tips.push('Use “because” or “due to”.');
+      if(evidences>=2){ score+=1 } else tips.push('Use at least 2 evidence items.');
+      scoreEl.textContent='Score: '+score+'/3';
+      hintsEl.textContent=tips.join(' ');
+      hintsEl.classList.toggle('show', tips.length>0);
+      if(score===3) addBadge('Claim Maker','✍️');
+
+      const s=getSaved(); s.claims=s.claims||{}; s.claims[m.id]=txt; setSaved(s);
     });
 
-    // Restore claim
-    const s=getSaved(); const c=(s.claims||{})[m.id]||'';
-    document.getElementById('claim').value=c;
+    document.getElementById('btn-export').addEventListener('click',()=>{
+      const m=MISSIONS.find(x=>x.id===current);
+      const s=getSaved(); const list=(s.ev?.[m.id]||[]).map(i=>(m.ev[currentTier]||m.ev['6_8'])[i]||'');
+      const claim=(s.claims||{})[m.id]||claimEl.value||'';
+      const text=['NewsPlay — Mystery Missions','Mission: '+m.title,'Tier: '+currentTier,'Evidence: '+(list.join('; ')||'none'),'Claim:',claim].join('\n');
+      const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='newsplay-mystery.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500);
+    });
 
-    // Update sim outputs
-    onSimChange();
-  }
+    document.getElementById('btn-reset').addEventListener('click',()=>{
+      if(!confirm('Reset this mission?')) return;
+      const s=getSaved(); delete (s.ev||{})[current]; delete (s.claims||{})[current]; setSaved(s); renderMission();
+    });
 
-  /******** 4) Sim logic ********/
-  const dEl=document.getElementById('sim-demand');
-  const sEl=document.getElementById('sim-supply');
-  function onSimChange(){
-    const d=+dEl.value, s=+sEl.value;
-    document.getElementById('sim-demand-val').textContent=(d>0?'+':'')+d+'%';
-    document.getElementById('sim-supply-val').textContent=(s>0?'+':'')+s+'%';
-    const net=d - s; // demand up pushes price up; supply up pushes price down
-    document.getElementById('sim-price').textContent = net>5 ? 'up' : net<-5 ? 'down' : 'about the same';
-    const qty = d + s; // both up → quantity up; both down → quantity down
-    document.getElementById('sim-qty').textContent = qty>5 ? 'up' : qty<-5 ? 'down' : 'about the same';
-  }
-  dEl.addEventListener('input', onSimChange);
-  sEl.addEventListener('input', onSimChange);
-
-  /******** 5) Claim scoring ********/
-  document.getElementById('btn-score').addEventListener('click',()=>{
-    const txt=document.getElementById('claim').value.trim();
-    const out=document.getElementById('score'); const hints=document.getElementById('hints');
-    let score=0, tips=[];
-    if(txt.length>=60){ score+=1 } else tips.push('Write at least 2–3 sentences.');
-    if(/because|due to|since/i.test(txt)){ score+=1 } else tips.push('Use a connector like “because”.');
-    if(/evidence|data|proof|sim|slider|selected/i.test(txt)){ score+=1 } else tips.push('Refer to your evidence or the sim.');
-    out.textContent='Score: '+score+'/3';
-    hints.textContent=tips.join(' ');
-    hints.classList.toggle('show', tips.length>0);
-    if(score===3) addBadge('Claim Maker','✍️');
-    // Save
-    const m=MISSIONS.find(x=>x.id===current);
-    const s=getSaved(); s.claims=s.claims||{}; s.claims[m.id]=txt; setSaved(s);
+    // Init
+    renderBadges(); paintTier(); mountMissions(); renderMission();
   });
-
-  document.getElementById('btn-export').addEventListener('click',()=>{
-    const m=MISSIONS.find(x=>x.id===current);
-    const s=getSaved(); const list=(s.ev?.[m.id]||[]).map(i=>(m.ev[currentTier]||m.ev['6_8'])[i]||'');
-    const claim=(s.claims||{})[m.id]||document.getElementById('claim').value||'';
-    const text = [
-      'NewsPlay — Mystery Missions',
-      'Mission: '+m.title,
-      'Tier: '+currentTier,
-      'Evidence: '+(list.join('; ')||'none'),
-      'Claim:',
-      claim
-    ].join('\n');
-    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='newsplay-mystery.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500);
-  });
-
-  document.getElementById('btn-reset').addEventListener('click',()=>{
-    if(!confirm('Reset this mission?')) return;
-    const s=getSaved(); delete (s.ev||{})[current]; delete (s.claims||{})[current]; setSaved(s); renderMission();
-  });
-
-  /******** 6) Persistence ********/
-  function getSaved(){ try{return JSON.parse(localStorage.getItem(MYST_KEY))||{}}catch{return{}} }
-  function setSaved(obj){ localStorage.setItem(MYST_KEY, JSON.stringify(obj)); }
-
-  /******** 7) Init ********/
-  function init(){ renderBadges(); paintTier(); mountMissions(); renderMission(); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
   </script>
 </body>
 </html>
