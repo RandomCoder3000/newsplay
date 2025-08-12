@@ -1,427 +1,271 @@
-// extras.js — extra topic cards with colored panels + mini‑quizzes (7 topics) + fallback quizzes for main cards
-// Load order in index.html (at the very bottom):
-//   <script src="app.js" defer></script>
-//   <script src="extras.js" defer></script>
+// News Play — Extras.js (updated, idempotent, Canvas/GitHub‑friendly)
+// Adds extra story cards to the homepage and ensures nav hygiene.
+// Safe to include alongside app.js; won’t duplicate if loaded twice.
 
 (function(){
-  // 0) Helpers
+  'use strict';
+
+  /***********************
+   * 0) Tiny utilities
+   ***********************/
+  function $(sel, root){ return (root||document).querySelector(sel); }
+  function $all(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
   function getTier(){
-    try {
-      if (typeof window.getCurrentTier === 'function') return window.getCurrentTier();
-      if (typeof getPrefs === 'function') { const t = (getPrefs() || {}).tier; if (t) return t; }
-    } catch {}
-    const activeBtn = document.querySelector('.age-btn.text-white');
-    return activeBtn?.dataset?.tier || '6_8';
+    // Prefer active age button; fallback to stored preference
+    var active = $('.age-btn.text-white');
+    if (active && active.dataset && active.dataset.tier) return active.dataset.tier;
+    try{
+      var p = JSON.parse(localStorage.getItem('np_prefs_v1')||'{}');
+      return p.tier || '6_8';
+    }catch(_){ return '6_8'; }
   }
 
-  function speak(text){
-    if (!('speechSynthesis' in window)) { alert('Text‑to‑Speech not supported in this browser.'); return; }
-    const tier = getTier();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = tier === '6_8' ? 0.9 : 1;
-    speechSynthesis.cancel(); speechSynthesis.speak(utter);
+  function speak(txt){
+    if(!('speechSynthesis' in window)) return;
+    try{ var u = new SpeechSynthesisUtterance(txt); u.rate = getTier()==='6_8'?0.9:1; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(_){ }
   }
 
-  // 1) Extra topics (7)
-  const EXTRA_STORIES = [
+  /***********************
+   * 1) Extra stories data
+   ***********************/
+  // Each story has: id, title, source, panels{tier:[a,b,c]}, quiz{q,choices[],answer}
+  var EXTRA_STORIES = [
     {
-      id: 'budget',
-      title: 'What is a budget?',
-      source: 'https://en.wikipedia.org/wiki/Government_budget',
-      panels: {
-        '6_8': [
-          '🐖 Panel 1: A budget is a plan for your money—like a piggy‑bank map.',
-          '📝 Panel 2: You list money coming in and money going out.',
-          '🎯 Panel 3: You decide needs first, then nice‑to‑haves.'
-        ],
-        '9_11': [
-          '📒 A budget compares income to spending so you don’t run out.',
-          '⚖️ If spending is more than income, that’s a deficit; if less, a surplus.',
-          '🧭 Budgets help choose priorities (save, give, spend).'
-        ],
-        '12_14': [
-          '📑 Budgets allocate scarce resources; trade‑offs decide programs and savings.',
-          '➖ Deficit = spending − income; Surplus = income − spending.',
-          '🏛️ Governments publish budgets each year to plan taxes and services.'
-        ]
-      }
+      id:'budget',
+      title:'What is a budget? 💰',
+      source:{href:'https://en.wikipedia.org/wiki/Budget', label:'Source link'},
+      colors:['bg-amber-50','bg-yellow-50','bg-orange-50'],
+      panels:{
+        '6_8':['A budget is a simple plan for money.','List what you earn and spend.','Save a little for later.'],
+        '9_11':['Track income and expenses.','Sort needs vs wants.','Set a savings goal (e.g., 10%).'],
+        '12_14':['Plan cash‑flows by category.','Prioritize fixed vs variable costs.','Pay yourself first: automate saving.']
+      },
+      quiz:{q:'A budget mainly helps you…',choices:['Spend more now','Track money and plan','Ignore savings'],answer:'Track money and plan'}
     },
     {
-      id: 'fx',
-      title: 'What is an exchange rate?',
-      source: 'https://en.wikipedia.org/wiki/Exchange_rate',
-      panels: {
-        '6_8': [
-          '💱 Panel 1: Different countries use different money.',
-          '🔁 Panel 2: An exchange rate tells how much one money is worth in another.',
-          '🧳 Panel 3: When you travel, you swap money using that rate.'
-        ],
-        '9_11': [
-          '💵 1 US dollar might equal many rupees; this number changes over time.',
-          '📉 If your money buys less of another money, it weakened (depreciated).',
-          '📈 If it buys more, it strengthened (appreciated).'
-        ],
-        '12_14': [
-          '🌊 Rates can float (markets) or be fixed/managed by policy.',
-          '⚖️ Stronger currency → imports cheaper, exports harder; weaker → the reverse.',
-          '🏦 Central banks and trade flows influence rates over time.'
-        ]
-      }
+      id:'fx',
+      title:'What is an exchange rate? 🌐',
+      source:{href:'https://en.wikipedia.org/wiki/Exchange_rate', label:'Source link'},
+      colors:['bg-sky-50','bg-cyan-50','bg-teal-50'],
+      panels:{
+        '6_8':['It tells how much one country’s money is worth in another.','You swap money when visiting places.','The number can change every day.'],
+        '9_11':['Price of one currency in another.','More buyers can push a currency up.','Rates move with trade and news.'],
+        '12_14':['Currency price set in FX markets.','Driven by rates, inflation, flows.','Float vs peg; bid/ask spreads.']
+      },
+      quiz:{q:'If INR strengthens vs USD, imported goods in INR may…',choices:['Be cheaper','Be more expensive','Stay the same always'],answer:'Be cheaper'}
     },
     {
-      id: 'recession',
-      title: 'What is a recession?',
-      source: 'https://en.wikipedia.org/wiki/Recession',
-      panels: {
-        '6_8': [
-          '🐢 Panel 1: A recession is when the economy slows down.',
-          '🏪 Panel 2: Shops sell less and some jobs get harder to find.',
-          '🔧 Panel 3: Leaders try to help the economy speed up again.'
-        ],
-        '9_11': [
-          '📉 A recession is when the economy shrinks for a while.',
-          '👥 People spend less; businesses make less; some hiring pauses.',
-          '🔁 Later, growth usually returns as spending and jobs pick up.'
-        ],
-        '12_14': [
-          '🧮 Broad drop in output, income, jobs, and sales for months.',
-          '🧰 Governments/central banks may use policy tools to support demand.',
-          '📊 We track it with indicators like GDP and unemployment.'
-        ]
-      }
+      id:'recession',
+      title:'What is a recession? 📉',
+      source:{href:'https://en.wikipedia.org/wiki/Recession', label:'Source link'},
+      colors:['bg-rose-50','bg-pink-50','bg-rose-100'],
+      panels:{
+        '6_8':['A time when many shops sell less.','Some people lose jobs.','The country makes less stuff for a while.'],
+        '9_11':['Big slowdown in spending and jobs.','Fewer new projects start.','Governments may try to help.'],
+        '12_14':['Broad decline in activity (output/jobs).','Demand falls; investment cools.','Policy may cut rates or raise spending.']
+      },
+      quiz:{q:'During recessions, unemployment usually…',choices:['Goes up','Goes down','Never changes'],answer:'Goes up'}
     },
     {
-      id: 'unemployment',
-      title: 'What is unemployment?',
-      source: 'https://en.wikipedia.org/wiki/Unemployment',
-      panels: {
-        '6_8': [
-          '👷 Panel 1: Unemployment is when grown‑ups want a job but can’t find one.',
-          '🔎 Panel 2: Communities try to help people find work.',
-          '📈 Panel 3: We count how many people are looking for jobs.'
-        ],
-        '9_11': [
-          '📊 The unemployment rate shows the share of workers who are job‑hunting.',
-          '⏳ Some unemployment is short while people switch jobs (frictional).',
-          '🏭 Others come from skill changes or slowdowns.'
-        ],
-        '12_14': [
-          '🧩 Types: frictional, structural (skills/location mismatch), cyclical (downturns).',
-          '📈 Rate = unemployed ÷ labor force; policies aim to reduce it.',
-          '🏫 Training & mobility can help lower structural unemployment.'
-        ]
-      }
+      id:'unemployment',
+      title:'What is unemployment? 🧑‍🏭',
+      source:{href:'https://en.wikipedia.org/wiki/Unemployment', label:'Source link'},
+      colors:['bg-lime-50','bg-green-50','bg-emerald-50'],
+      panels:{
+        '6_8':['People who want jobs but cannot find one.','They keep looking for work.','Training can help people get jobs.'],
+        '9_11':['Job seekers without jobs (but available).','Can be short or long.','Skills and location matter.'],
+        '12_14':['Share of labor force not employed.','Frictional, structural, cyclical types.','Measured by surveys; varies by age/region.']
+      },
+      quiz:{q:'Someone not looking for a job is counted as…',choices:['Unemployed','Not in the labor force','Employed'],answer:'Not in the labor force'}
     },
-    // NEW 1: Supply & Demand
     {
-      id: 'supplydemand',
-      title: 'What are supply & demand?',
-      source: 'https://en.wikipedia.org/wiki/Supply_and_demand',
-      panels: {
-        '6_8': [
-          '🍎 Panel 1: Supply is how much there is. Demand is how much people want.',
-          '📦 Panel 2: Lots to sell → prices can be lower.',
-          '👥 Panel 3: Many people want it → prices can go up.'
-        ],
-        '9_11': [
-          '📈 Higher demand or lower supply tends to raise prices; the reverse lowers prices.',
-          '⚖️ Prices move toward a balance where buyers and sellers agree.',
-          '🔁 Seasons, trends, or costs can shift supply or demand.'
-        ],
-        '12_14': [
-          '🧮 Market price moves toward equilibrium where Qs = Qd.',
-          '➡️ Shifters: income, tastes, substitutes/complements, expectations; also input costs & tech.',
-          '📊 Curves shift (not just move along); shocks can cause shortages or surpluses.'
-        ]
-      }
+      id:'supplydemand',
+      title:'What are supply & demand? ⚖️',
+      source:{href:'https://en.wikipedia.org/wiki/Supply_and_demand', label:'Source link'},
+      colors:['bg-indigo-50','bg-blue-50','bg-violet-50'],
+      panels:{
+        '6_8':['Supply: how much sellers bring.','Demand: how much people want.','Price moves to balance them.'],
+        '9_11':['Shifters move curves left/right.','Equilibrium is where they meet.','Shocks cause new prices/quantities.'],
+        '12_14':['Elasticity changes slope/impact.','Policy can cap or floor prices.','Expectations shift curves too.']
+      },
+      quiz:{q:'If demand rises and supply stays the same, price tends to…',choices:['Go up','Go down','Stay fixed'],answer:'Go up'}
     },
-    // NEW 2: Stocks vs Bonds
     {
-      id: 'stocksbonds',
-      title: 'What are stocks and bonds?',
-      source: 'https://en.wikipedia.org/wiki/Stock_(finance)',
-      panels: {
-        '6_8': [
-          '🏢 Panel 1: A stock is a tiny piece of a company.',
-          '💵 Panel 2: A bond is a promise to pay back money later with a little extra.',
-          '🎯 Panel 3: People buy them to try to grow savings.'
-        ],
-        '9_11': [
-          '📊 Stocks can go up and down a lot (riskier) but may grow more.',
-          '🏦 Bonds pay steady interest and are usually steadier.',
-          '🧮 A mix can balance growth and safety.'
-        ],
-        '12_14': [
-          '📈 Stocks (equity) = ownership; may pay dividends; volatile.',
-          '🏛️ Bonds (debt) = lending for interest; risks: default & rate moves.',
-          '⚖️ Risk–return trade‑off: equities higher expected return with higher risk vs fixed income.'
-        ]
-      }
+      id:'stocksbonds',
+      title:'What are stocks & bonds? 📈',
+      source:{href:'https://en.wikipedia.org/wiki/Stock', label:'Source link'},
+      colors:['bg-fuchsia-50','bg-purple-50','bg-violet-50'],
+      panels:{
+        '6_8':['Stock: tiny piece of a company.','Bond: a loan you give to someone.','Both can help money grow over time.'],
+        '9_11':['Stocks can rise/fall with profits.','Bonds pay interest until maturity.','Diversifying can lower risk.'],
+        '12_14':['Equity (ownership) vs debt (lending).','Return vs risk trade‑off.','Price moves with news/discount rates.']
+      },
+      quiz:{q:'A bond is closest to…',choices:['A loan','A slice of ownership','A coupon for shopping'],answer:'A loan'}
     },
-    // NEW 3: Supply Chain
     {
-      id: 'supplychain',
-      title: 'What is a supply chain?',
-      source: 'https://en.wikipedia.org/wiki/Supply_chain',
-      panels: {
-        '6_8': [
-          '🚚 Panel 1: A supply chain is the trip a product takes from farm/factory to you.',
-          '🏭 Panel 2: Many helpers—makers, trucks, ships, shops—work together.',
-          '⏱️ Panel 3: If one step is slow, the whole trip can take longer.'
-        ],
-        '9_11': [
-          '🧰 Steps: raw materials → factory → transport → warehouse → store → you.',
-          '🌧️ Weather or shortages can delay parts and raise costs.',
-          '💸 When costs rise, prices can rise too.'
-        ],
-        '12_14': [
-          '🕸️ Network of suppliers, logistics, inventory systems moves goods to customers.',
-          '🧱 Bottlenecks (ports, chips, energy) ripple through prices and availability.',
-          '🔁 Firms balance efficiency (JIT) vs resilience (buffers, multi‑sourcing).'
-        ]
-      }
+      id:'supplychain',
+      title:'What is a supply chain? 🛤️',
+      source:{href:'https://en.wikipedia.org/wiki/Supply_chain', label:'Source link'},
+      colors:['bg-amber-50','bg-emerald-50','bg-teal-50'],
+      panels:{
+        '6_8':['A path things travel from makers to you.','Trucks/ships move parts and goods.','If one step stops, others wait.'],
+        '9_11':['Steps: raw parts → factory → store → home.','Delays can slow everything.','Planning helps keep it flowing.'],
+        '12_14':['Network of suppliers/logistics/retail.','Bottlenecks ripple through output.','Resilience via buffers & dual sourcing.']
+      },
+      quiz:{q:'A “bottleneck” in a supply chain means…',choices:['Things move faster','A tight spot slows the whole line','Prices always fall'],answer:'A tight spot slows the whole line'}
     }
   ];
 
-  // 2) Color palettes per topic (so panels aren’t plain white)
-  const PALETTES = {
-    budget: ['bg-pink-50','bg-rose-50','bg-red-50'],
-    fx: ['bg-indigo-50','bg-blue-50','bg-sky-50'],
-    recession: ['bg-yellow-50','bg-amber-50','bg-orange-50'],
-    unemployment: ['bg-lime-50','bg-green-50','bg-emerald-50'],
-    supplydemand: ['bg-blue-50','bg-sky-50','bg-cyan-50'],
-    stocksbonds: ['bg-purple-50','bg-violet-50','bg-fuchsia-50'],
-    supplychain: ['bg-teal-50','bg-emerald-50','bg-green-50']
-  };
-  function paletteFor(id){ return PALETTES[id] || ['bg-slate-50','bg-slate-50','bg-slate-50']; }
+  /****************************************
+   * 2) DOM builders (card + quiz + TTS)
+   ****************************************/
+  function createStoryCard(st){
+    var art = document.createElement('article');
+    art.className = 'p-5 bg-white rounded-2xl shadow';
 
-  // 3) Mini‑quiz database (3 Q per topic)
-  const QUIZ_DB = {
-    budget: [
-      { q:'A budget compares…', opts:['income to spending','sports to movies'], a:0 },
-      { q:'Spending more than income is a…', opts:['surplus','deficit'], a:1 },
-      { q:'First plan for…', opts:['needs','only fun things'], a:0 }
-    ],
-    fx: [
-      { q:'An exchange rate tells…', opts:['how much one money is worth in another','the weather'], a:0 },
-      { q:'If your money buys less foreign money, it…', opts:['depreciated','appreciated'], a:0 },
-      { q:'Who influences exchange rates?', opts:['markets & central banks','librarians'], a:0 }
-    ],
-    recession: [
-      { q:'In a recession the economy usually…', opts:['shrinks for a while','grows very fast'], a:0 },
-      { q:'People often…', opts:['spend less','buy more luxury items'], a:0 },
-      { q:'One way to track recessions is with…', opts:['GDP & jobs','shoe sizes'], a:0 }
-    ],
-    unemployment: [
-      { q:'Unemployment means…', opts:['people want jobs but can’t find them','nobody wants a job'], a:0 },
-      { q:'Switching between jobs is called…', opts:['frictional unemployment','magical hopping'], a:0 },
-      { q:'Training and mobility help lower…', opts:['structural unemployment','ice cream prices'], a:0 }
-    ],
-    supplydemand: [
-      { q:'Higher demand with same supply tends to…', opts:['raise prices','lower prices'], a:0 },
-      { q:'The balance point is called…', opts:['equilibrium','edge point'], a:0 },
-      { q:'A fall in input costs usually…', opts:['shifts supply right','shifts demand left'], a:0 }
-    ],
-    stocksbonds: [
-      { q:'Stocks represent…', opts:['ownership in a company','a promise to pay interest only'], a:0 },
-      { q:'Bonds usually…', opts:['pay interest','have no risk at all'], a:0 },
-      { q:'Mixing stocks and bonds helps with…', opts:['balancing risk and return','making everything risk‑free'], a:0 }
-    ],
-    supplychain: [
-      { q:'A supply chain is…', opts:['the path goods take to you','a type of jewelry'], a:0 },
-      { q:'A bottleneck can…', opts:['slow the whole chain','make everything free'], a:0 },
-      { q:'Resilience can be improved by…', opts:['backup suppliers','ignoring delays'], a:0 }
-    ]
-  };
+    var html = ''+
+      '<div class="flex items-start justify-between gap-3">'+
+        '<div>'+
+          '<h3 class="text-xl font-bold" id="title-'+st.id+'">'+st.title+'</h3>'+
+          '<a class="text-xs text-indigo-600 underline" href="'+st.source.href+'" target="_blank" rel="noreferrer">'+st.source.label+'</a>'+
+        '</div>'+
+        '<div class="flex gap-2">'+
+          '<button id="btn-tts-'+st.id+'" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="mt-4 grid grid-cols-3 gap-3">'+
+        '<div class="comic-panel rounded-xl '+(st.colors[0]||'bg-slate-50')+' p-3" id="panel-'+st.id+'-1"></div>'+
+        '<div class="comic-panel rounded-xl '+(st.colors[1]||'bg-slate-50')+' p-3" id="panel-'+st.id+'-2"></div>'+
+        '<div class="comic-panel rounded-xl '+(st.colors[2]||'bg-slate-50')+' p-3" id="panel-'+st.id+'-3"></div>'+
+      '</div>'+
+      '<div class="mt-5 p-3 rounded-2xl bg-slate-50" id="quiz-'+st.id+'">'+
+        '<h4 class="font-semibold">Quick Quiz 🧠</h4>'+
+        '<div class="mt-2 space-y-2"></div>'+
+        '<button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white">Check answers</button>'+
+        '<p class="mt-2 text-sm text-slate-700"></p>'+
+      '</div>';
 
-  // 4) Card factory
-  function createStoryCard(story){
-    const wrap = document.createElement('article');
-    wrap.className = 'p-5 bg-white rounded-2xl shadow';
+    art.innerHTML = html;
 
-    const ttsId = `btn-tts-${story.id}`;
-    const p1 = `panel-${story.id}-1`;
-    const p2 = `panel-${story.id}-2`;
-    const p3 = `panel-${story.id}-3`;
-    const colors = paletteFor(story.id);
-
-    // quiz ids
-    const quizId = `quiz-${story.id}`;
-    const quizOut = `quiz-out-${story.id}`;
-
-    wrap.innerHTML = `
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h3 class="text-xl font-bold" id="title-${story.id}">${story.title}</h3>
-          <a id="src-${story.id}" class="text-xs text-indigo-600 underline" href="${story.source}" target="_blank" rel="noreferrer">Source link</a>
-        </div>
-        <div class="flex gap-2">
-          <button id="${ttsId}" class="pop px-3 py-2 rounded-xl bg-emerald-600 text-white" title="Read aloud">🔊 Read aloud</button>
-        </div>
-      </div>
-      <div class="mt-4 grid grid-cols-3 gap-3">
-        <div class="comic-panel rounded-xl ${colors[0]} p-3" id="${p1}"></div>
-        <div class="comic-panel rounded-xl ${colors[1]} p-3" id="${p2}"></div>
-        <div class="comic-panel rounded-xl ${colors[2]} p-3" id="${p3}"></div>
-      </div>
-      <div class="mt-4 p-3 rounded-xl bg-slate-50">
-        <h4 class="font-semibold">Mini Quiz 🧠</h4>
-        <div class="mt-2 space-y-2" id="${quizId}"></div>
-        <button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white" id="btn-${quizId}">Check answers</button>
-        <p class="mt-2 text-sm" id="${quizOut}"></p>
-      </div>
-    `;
-
+    // Methods
     function renderPanels(tier){
-      const pan = story.panels[tier];
-      document.getElementById(p1).textContent = pan[0];
-      document.getElementById(p2).textContent = pan[1];
-      document.getElementById(p3).textContent = pan[2];
+      var lines = (st.panels[tier] || st.panels['6_8'] || []);
+      var p1 = $('#panel-'+st.id+'-1', art);
+      var p2 = $('#panel-'+st.id+'-2', art);
+      var p3 = $('#panel-'+st.id+'-3', art);
+      if(p1) p1.textContent = lines[0] || '';
+      if(p2) p2.textContent = lines[1] || '';
+      if(p3) p3.textContent = lines[2] || '';
     }
 
     function attachTTS(){
-      const btn = wrap.querySelector('#'+ttsId);
-      if (!btn) return;
-      btn.addEventListener('click', ()=> speak(story.panels[getTier()].join(' ')) );
+      var btn = $('#btn-tts-'+st.id, art);
+      if(!btn) return;
+      btn.addEventListener('click', function(){
+        var tier = getTier();
+        var lines = (st.panels[tier] || st.panels['6_8'] || []);
+        speak(st.title.replace(/\s*[\p{Emoji_Presentation}\p{Extended_Pictographic}].*$/u,'')+': '+lines.filter(Boolean).join('. '));
+      });
     }
 
     function renderQuiz(){
-      const holder = wrap.querySelector('#'+quizId);
-      const questions = QUIZ_DB[story.id] || [];
-      holder.innerHTML = questions.map((qq, i)=>{
-        const name = `q-${story.id}-${i}`;
-        return `
-          <div>
-            <p class="text-sm font-medium">${i+1}) ${qq.q}</p>
-            ${qq.opts.map((op, j)=>`<label class="text-sm block"><input type="radio" name="${name}" value="${j}"/> ${op}</label>`).join('')}
-          </div>`;
-      }).join('');
-      const btn = wrap.querySelector('#btn-'+quizId);
-      const out = wrap.querySelector('#'+quizOut);
-      btn.onclick = ()=>{
-        const questions = QUIZ_DB[story.id] || [];
-        let score=0; let answered=0;
-        questions.forEach((qq, i)=>{
-          const checked = wrap.querySelector(`input[name="q-${story.id}-${i}"]:checked`);
-          if (checked){ answered++; if (+checked.value === qq.a) score++; }
-        });
-        out.textContent = `Score: ${score}/${questions.length}`;
-        if (typeof addBadge === 'function' && score === questions.length && questions.length>0){ addBadge(story.title+' Whiz','🧠'); }
-      };
+      var box = $('#quiz-'+st.id+' .space-y-2', art);
+      var btn = $('#quiz-'+st.id+' button', art);
+      var out = $('#quiz-'+st.id+' p', art);
+      if(!box || !btn || !out) return;
+      // Single multiple-choice per card (kid-friendly)
+      var name = 'q_'+st.id;
+      var q = st.quiz.q;
+      var choices = st.quiz.choices;
+      box.innerHTML = '<p class="text-sm font-medium">'+q+'</p>'+
+        choices.map(function(c){ return '<label class="text-sm block"><input type="radio" name="'+name+'" value="'+c.replace(/"/g,'&quot;')+'"> '+c+'</label>'; }).join('');
+      btn.addEventListener('click', function(){
+        var sel = $('input[name="'+name+'"]:checked', art);
+        if(!sel){ out.textContent = 'Pick an option!'; out.className='mt-2 text-sm text-rose-600'; return; }
+        var ok = (sel.value === st.quiz.answer);
+        out.textContent = ok ? 'Nice! ✅' : 'Almost — correct: '+st.quiz.answer;
+        out.className = 'mt-2 text-sm '+(ok?'text-emerald-700':'text-amber-700');
+      });
     }
 
-    return { node: wrap, renderPanels, attachTTS, renderQuiz };
-  }
-
-  // 4.5) Fallback quizzes for main cards (Trade, Banks, Taxes, GDP)
-  // (Only adds them if app.js didn’t already insert them.)
-  const QUIZ_MAIN = {
-    trade: [
-      { q:'Countries trade to…', opts:['get things they don\'t make well','make everything themselves'], a:0 },
-      { q:'Specialization means…', opts:['focusing on what you\'re best at','stopping trade'], a:0 },
-      { q:'Imports are…', opts:['things we buy from other countries','things we sell to them'], a:0 }
-    ],
-    banks: [
-      { q:'Banks use part of deposits to…', opts:['make loans','buy candy'], a:0 },
-      { q:'Interest is…', opts:['extra money paid for borrowing','a holiday'], a:0 },
-      { q:'Banks must keep part of deposits as…', opts:['reserves','recycling'], a:0 }
-    ],
-    taxes: [
-      { q:'Taxes pay for…', opts:['public services like roads & schools','video game points'], a:0 },
-      { q:'Tax on things you buy is…', opts:['sales tax / GST','plant tax'], a:0 },
-      { q:'Higher incomes paying higher rates is called…', opts:['progressive','invisible'], a:0 }
-    ],
-    gdp: [
-      { q:'GDP measures…', opts:['value of goods/services made in a country','amount of gold a country has'], a:0 },
-      { q:'GDP per person is…', opts:['GDP divided by population','GDP times population'], a:0 },
-      { q:'GDP does not capture everything, like…', opts:['happiness or environmental costs','any prices at all'], a:0 }
-    ]
-  };
-
-  function mountMainQuiz(key, panelId, badge){
-    if (document.getElementById('quiz-main-'+key)) return; // already present
-    const panel = document.getElementById(panelId);
-    if (!panel) return;
-    const article = panel.closest('article');
-    if (!article) return;
-    const holderId = `quiz-main-${key}`;
-    const wrap = document.createElement('div');
-    wrap.className = 'mt-4 p-3 rounded-xl bg-slate-50';
-    const btnId = `btn-${holderId}`; const outId = `out-${holderId}`;
-    wrap.innerHTML = `
-      <h4 class="font-semibold">Mini Quiz 🧠</h4>
-      <div class="mt-2 space-y-2" id="${holderId}"></div>
-      <button class="mt-2 pop px-3 py-2 rounded-xl bg-indigo-600 text-white" id="${btnId}">Check answers</button>
-      <p class="mt-2 text-sm" id="${outId}"></p>
-    `;
-    article.appendChild(wrap);
-    const questions = QUIZ_MAIN[key] || [];
-    const qHolder = wrap.querySelector('#'+holderId);
-    qHolder.innerHTML = questions.map((qq,i)=>{
-      const name = `q-${key}-${i}`;
-      return `<div><p class=\"text-sm font-medium\">${i+1}) ${qq.q}</p>${qq.opts.map((op,j)=>`<label class=\"text-sm block\"><input type=\"radio\" name=\"${name}\" value=\"${j}\"/> ${op}</label>`).join('')}</div>`;
-    }).join('');
-    const btn = wrap.querySelector('#'+btnId); const out = wrap.querySelector('#'+outId);
-    btn.onclick = ()=>{
-      let score=0; const total=questions.length;
-      questions.forEach((qq,i)=>{ const checked = wrap.querySelector(`input[name=\"q-${key}-${i}\"]:checked`); if(checked && +checked.value===qq.a) score++; });
-      out.textContent = `Score: ${score}/${total}`;
-      if (typeof addBadge === 'function' && score===total && total>0) addBadge(badge,'🧠');
+    return {
+      node: art,
+      renderPanels: renderPanels,
+      attachTTS: attachTTS,
+      renderQuiz: renderQuiz
     };
   }
 
-  function ensureMainQuizzes(){
-    // If app.js already mounted them, do nothing; else add.
-    const ready = !!document.getElementById('panel2-1');
-    if (!ready) return false;
-    mountMainQuiz('trade','panel2-1','Trade Whiz');
-    mountMainQuiz('banks','panel3-1','Banking Brain');
-    mountMainQuiz('taxes','panel4-1','Tax Pro');
-    mountMainQuiz('gdp','panel5-1','GDP Guru');
-    return true;
+  /****************************************
+   * 3) Mount logic (idempotent)
+   ****************************************/
+  function findGrid(){
+    // Try several robust selectors; pick the last grid in <main>
+    var grids = $all('main section.grid');
+    if (grids.length) return grids[grids.length-1];
+    return $('main'); // fallback — still append, layout will stack
   }
 
-  // 5) Mount to the existing grid
+  function ensureNav(){
+    var nav = $('header nav, #nav-strip');
+    if(!nav) return;
+    // Remove Learn Deck if present
+    var ld = nav.querySelector('a[href$="learn-deck.html"]');
+    if(ld) ld.remove();
+    // Ensure Mystery Missions exists once
+    if(!nav.querySelector('[data-nav="mystery"]')){
+      var a = document.createElement('a');
+      a.href = 'mystery.html';
+      a.className = 'pop px-3 py-2 rounded-xl bg-rose-100 whitespace-nowrap';
+      a.textContent = '🕵️ Mystery Missions';
+      a.setAttribute('data-nav','mystery');
+      nav.appendChild(a);
+    }
+  }
+
   function mount(){
-    const grid = document.querySelector('main section.grid');
-    if (!grid) return;
+    // Idempotent guard: prevents duplicate cards if script runs twice
+    if (window.__NP_EXTRAS_MOUNTED) return; 
+    window.__NP_EXTRAS_MOUNTED = true;
 
-    const tier = getTier();
-    const registry = [];
+    ensureNav();
 
-    EXTRA_STORIES.forEach(st => {
-      const card = createStoryCard(st);
+    var grid = findGrid();
+    if(!grid){ console.warn('[extras] grid not found'); return; }
+
+    var tier = getTier();
+    var registry = [];
+
+    EXTRA_STORIES.forEach(function(st){
+      // Skip if already present (e.g., due to a previous run)
+      if ($('#title-'+st.id)) return;
+      var card = createStoryCard(st);
       grid.appendChild(card.node);
       card.renderPanels(tier);
       card.attachTTS();
       card.renderQuiz();
-      registry.push({ st, card });
+      registry.push(card);
     });
 
-    // Re-render when user clicks an age button
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest && e.target.closest('.age-btn');
-      if (!btn) return;
-      const t = btn.dataset.tier || getTier();
-      registry.forEach(({card})=> card.renderPanels(t));
-    });
+    // Late fallback: if any panel still empty, fill it
+    setTimeout(function(){
+      var t = getTier();
+      registry.forEach(function(card){ card.renderPanels(t); });
+    }, 300);
 
-    // Also re-render when app.js dispatches a tierchange event
-    document.addEventListener('tierchange', (e)=>{
-      const t = e.detail || getTier();
-      registry.forEach(({card})=> card.renderPanels(t));
+    // Re-render on age button click or custom tierchange
+    document.addEventListener('click', function(e){
+      var b = e.target && e.target.closest && e.target.closest('.age-btn');
+      if(!b) return;
+      var t = b.dataset.tier || getTier();
+      registry.forEach(function(card){ card.renderPanels(t); });
     });
-
-    // Try to ensure main quizzes exist (fallback if app.js didn’t add them)
-    if (!ensureMainQuizzes()){
-      // Retry a few times in case panels render a bit later
-      let tries = 0; const h = setInterval(()=>{
-        tries++; if (ensureMainQuizzes() || tries>10) clearInterval(h);
-      }, 150);
-    }
+    document.addEventListener('tierchange', function(ev){
+      var t = (ev && ev.detail) || getTier();
+      registry.forEach(function(card){ card.renderPanels(t); });
+    });
   }
 
-  // Initialize after DOM is parsed
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mount);
   } else {
